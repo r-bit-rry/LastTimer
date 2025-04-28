@@ -2,12 +2,7 @@ package com.lasttimer.app.service
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import androi            }
-        }
-        
-        // Start foreground service with a basic notification
-        // The specific timer notification will be updated once the timer starts
-        startForeground(NOTIFICATION_ID, createNotification("LastTimer is running").build())p.PendingIntent
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -153,7 +148,9 @@ class TimerService : Service() {
             }
         }
         
-        startForeground(NOTIFICATION_ID, createNotification("LastTimer is running"))
+        // Start foreground service with a basic notification
+        // The specific timer notification will be updated once the timer starts
+        startForeground(NOTIFICATION_ID, createNotification("LastTimer is running").build())
         
         return START_STICKY
     }
@@ -474,7 +471,6 @@ class TimerService : Service() {
             timerRepository.resetTimer(timerId)
             startTimer(timerId)
         }
-    }
     }
     
     private fun updateTimerState(

@@ -3,8 +3,9 @@ plugins {
     id 'org.jetbrains.kotlin.android'
     id 'kotlin-kapt'
     id 'com.google.dagger.hilt.android'
-    id 'androidx.navigation.safeargs.kotlin'
     id 'com.google.devtools.ksp'
+    // Safe args plugin is causing issues
+    // id 'androidx.navigation.safeargs.kotlin'
 }
 
 android {
