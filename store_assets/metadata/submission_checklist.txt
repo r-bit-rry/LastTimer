@@ -1,0 +1,53 @@
+# Play Store Submission Checklist
+
+## App Information
+- [ ] App name: "LastTimer"
+- [ ] Brief description (80 characters max)
+- [ ] Full description (see description.txt)
+- [ ] App category: Tools > Time Management
+- [ ] Content rating questionnaire completed
+- [ ] Email address for support
+- [ ] Website URL for app (if available)
+- [ ] Privacy policy URL (link to privacy_policy.txt)
+
+## Graphics Assets
+- [ ] App icon (512x512 px)
+- [ ] Feature graphic (1024x500 px)
+- [ ] At least 2 screenshots for each supported device type
+- [ ] Optional: Promotional video
+
+## APK and Store Listing
+- [ ] App signed with release key
+- [ ] App versioned properly (1.0.0)
+- [ ] App bundle (.aab file) created
+- [ ] App tested on multiple device types
+- [ ] Release notes prepared (see release_notes.txt)
+- [ ] Price & distribution countries selected (Free, Worldwide)
+- [ ] Content rating assigned
+- [ ] Ads declaration (No ads)
+- [ ] App access declaration (No restricted content)
+- [ ] Target age range (Everyone)
+
+## Pre-launch Testing
+- [ ] Internal testing track configured
+- [ ] Closed testing track ready for beta testers (optional)
+- [ ] Pre-launch report issues addressed
+
+## Legal Compliance
+- [ ] Privacy policy compliant with Google Play requirements
+- [ ] App complies with Developer Program Policies
+- [ ] Appropriate permissions requested (only necessary ones)
+- [ ] Data safety section completed
+
+## Final Checks
+- [ ] All app features work as expected
+- [ ] No crashes or ANRs in pre-launch tests
+- [ ] UI renders correctly on various screen sizes
+- [ ] Performance is optimized
+- [ ] Battery usage is reasonable
+- [ ] All text strings are properly translated (if supporting multiple languages)
+
+## Post-Launch
+- [ ] Monitor Play Console for crashes or issues
+- [ ] Respond to user reviews
+- [ ] Plan update schedule for improvements

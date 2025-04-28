@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base night theme -->
+    <style name="Theme.LastTimer" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Primary brand color -->
+        <item name="colorPrimary">@color/primary_night</item>
+        <item name="colorPrimaryVariant">@color/primary_dark_night</item>
+        <item name="colorOnPrimary">@color/black</item>
+        
+        <!-- Secondary brand color -->
+        <item name="colorSecondary">@color/secondary_night</item>
+        <item name="colorSecondaryVariant">@color/secondary_dark_night</item>
+        <item name="colorOnSecondary">@color/black</item>
+        
+        <!-- Status bar color -->
+        <item name="android:statusBarColor">@color/black</item>
+        
+        <!-- Text colors -->
+        <item name="android:textColorPrimary">@color/text_primary_night</item>
+        <item name="android:textColorSecondary">@color/text_secondary_night</item>
+    </style>
+</resources>

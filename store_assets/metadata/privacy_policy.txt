@@ -1,0 +1,58 @@
+# LastTimer Privacy Policy
+
+## Last updated: April 28, 2025
+
+This Privacy Policy describes Our policies and procedures on the collection, use and disclosure of Your information when You use the Service and tells You about Your privacy rights and how the law protects You.
+
+## Interpretation and Definitions
+
+### Interpretation
+
+The words of which the initial letter is capitalized have meanings defined under the following conditions. The following definitions shall have the same meaning regardless of whether they appear in singular or in plural.
+
+### Definitions
+
+For the purposes of this Privacy Policy:
+
+- **App** means the LastTimer software program provided by the Developer.
+- **Developer** (referred to as either "the Developer", "We", "Us" or "Our" in this Agreement) refers to the creator and publisher of LastTimer.
+- **Device** means any device that can access the Service such as a computer, a cellphone or a digital tablet.
+- **Service** refers to the App.
+- **You** means the individual accessing or using the Service, or the company, or other legal entity on behalf of which such individual is accessing or using the Service, as applicable.
+
+## Data Collection and Usage
+
+### No Personal Data Collection
+
+LastTimer is designed with privacy in mind. We do not collect, store, or transmit any personal information or data from our users. The app functions entirely on your device without requiring any account creation or online connectivity.
+
+### App Usage Data
+
+All data created within the app (timers, settings, templates, etc.) is stored locally on your device. We do not have access to this information.
+
+### Permissions
+
+LastTimer requires the following permissions:
+- **Notification Access**: To show timer notifications
+- **Start at Boot**: To restart active timers if your device reboots
+- **Run in Background**: To allow timers to function even when the app is not in the foreground
+- **Internet Access**: Only used for crash reporting (which does not include personal information)
+
+## Data Security
+
+Since all your data is stored locally on your device, the security of your information depends on your device's security measures. We recommend keeping your device updated and secured with a passcode.
+
+## Children's Privacy
+
+The Service is not directed to anyone under the age of 13. We do not knowingly collect personal information from anyone under the age of 13.
+
+## Changes to this Privacy Policy
+
+We may update Our Privacy Policy from time to time. We will notify You of any changes by posting the new Privacy Policy on this page and updating the "Last updated" date at the top of this Privacy Policy.
+
+You are advised to review this Privacy Policy periodically for any changes. Changes to this Privacy Policy are effective when they are posted on this page.
+
+## Contact Us
+
+If you have any questions about this Privacy Policy, You can contact us at:
+- Email: support@lasttimer.app

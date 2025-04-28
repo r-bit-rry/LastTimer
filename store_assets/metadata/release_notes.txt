@@ -1,0 +1,34 @@
+# LastTimer - Initial Release Notes (v1.0.0)
+
+We're excited to announce the initial release of LastTimer, a minimalist timer app with powerful features!
+
+## Features in this release:
+
+### Multiple Timer Types
+- Countdown Timers: Set timers for specific durations
+- Stopwatch: Track elapsed time with lap functionality
+- Date Countdown: Count down to specific dates and times
+
+### Advanced Timer Features
+- Cascading Timers: Chain multiple timers to run sequentially
+- Repeating Timers: Set timers that automatically restart
+- Custom Timer Names: Name and categorize your timers
+- Timer Templates: Save and reuse common timer configurations
+
+### UI/UX
+- Android Widgets: Control timers from your home screen
+- Lock Screen Controls: Manage timers without unlocking your device
+- Dark/Light Theme: Toggle between dark and light mode
+- Tab-based Navigation: Separate tabs for different timer types
+
+### Performance
+- Optimized for minimal battery usage
+- Fast startup time
+- Smooth animations
+
+## Known Issues
+- Group repeating functionality is limited
+- Widget updates may occasionally be delayed
+- Some tablet layouts may need optimization
+
+We're continuously working to improve LastTimer and welcome your feedback!

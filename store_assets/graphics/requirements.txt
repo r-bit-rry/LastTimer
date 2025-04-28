@@ -1,0 +1,31 @@
+# Play Store Graphics Requirements
+
+## Feature Graphic
+- Size: 1024 x 500 px
+- Format: PNG or JPEG, 24-bit (no alpha)
+- Max size: 3MB
+
+## Promo Graphic
+- Size: 180 x 120 px
+- Format: PNG or JPEG, 24-bit
+- Max size: 1MB
+
+## App Icon
+- Size: 512 x 512 px
+- Format: PNG or JPEG, 32-bit (with alpha)
+- Max size: 1MB
+
+## Screenshots
+- Phone: Min 2, max 8 screenshots
+- Format: PNG or JPEG, 24-bit (no alpha)
+- Min resolution: 320 px
+- Max resolution: 3840 px
+- Max size: 8MB per image
+
+## Design Guidelines
+- Use a minimalist design approach with clean lines
+- Feature app's timer interface prominently
+- Use the app's color scheme: primary color #FF6200EE, secondary color #FFBB86FC
+- Highlight key features: multiple timer types, groups, templates
+- Keep text to a minimum on graphics
+- Make sure text is legible at smaller sizes

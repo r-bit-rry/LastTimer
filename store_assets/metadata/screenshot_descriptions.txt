@@ -1,0 +1,25 @@
+# Screenshot Descriptions
+
+## Screenshot 1: Home/Main Screen
+"Multiple timer types in a beautiful, minimalist interface"
+
+## Screenshot 2: Countdown Timer
+"Easy-to-use countdown timer with precise controls"
+
+## Screenshot 3: Group Timers
+"Create cascading timer groups for complex routines"
+
+## Screenshot 4: Templates
+"Save and reuse your favorite timer configurations"
+
+## Screenshot 5: Stopwatch
+"Precise stopwatch with lap timing functionality"
+
+## Screenshot 6: Date Countdown
+"Count down to important dates and events"
+
+## Screenshot 7: Dark Mode
+"Dark mode for comfortable use in low-light conditions"
+
+## Screenshot 8: Widgets
+"Control your timers directly from your home screen"

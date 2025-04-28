@@ -1,0 +1,42 @@
+# LastTimer - Minimalist Timer App
+
+## Short Description
+An elegant, minimalist timer app with multiple timer types, groups, and templates to organize your time effectively.
+
+## Full Description
+LastTimer is a comprehensive time management app designed with a clean, minimalist aesthetic that brings together powerful timing capabilities in a simple, intuitive interface.
+
+🕒 MULTIPLE TIMER TYPES
+• Countdown Timers: Set precise timers for specific durations
+• Stopwatch: Track elapsed time with lap functionality
+• Date Countdown: Count down to specific dates and events
+
+⚡ ADVANCED FEATURES
+• Cascading Timers: Chain multiple timers to run sequentially - perfect for interval training, cooking complex recipes, or any multistep process
+• Repeating Timers: Set timers that automatically restart - ideal for regular reminders or interval workouts
+• Timer Templates: Save your frequently used timer configurations as templates for quick access
+• Custom Names & Categories: Organize your timers by name and category for easy reference
+
+🎨 BEAUTIFUL USER EXPERIENCE
+• Intuitive, Minimalist Design: Clean interface that's easy to navigate
+• Dark/Light Theme Support: Choose the theme that suits your preference
+• Tab-based Navigation: Easily switch between different timer types
+• Lock Screen Controls: Control your timers without unlocking your device
+• Home Screen Widgets: Start, pause, and stop timers directly from your home screen
+
+⚙️ SMART FUNCTIONALITY
+• Background Operation: Timers continue to run even when the app is closed
+• Notifications: Get alerts when your timers finish
+• Battery Efficient: Designed to minimize battery usage while maintaining accuracy
+
+LastTimer is the perfect companion for:
+• Fitness and workouts (interval training, HIIT sessions)
+• Cooking and baking (keep track of multiple dishes simultaneously)
+• Studying (Pomodoro technique)
+• Productivity (time blocking)
+• Meditation and mindfulness sessions
+• And any other activity where time management matters
+
+Download LastTimer and take control of your time with a timer app that's both powerful and beautiful.
+
+No ads. No in-app purchases. Simple, effective time management.
