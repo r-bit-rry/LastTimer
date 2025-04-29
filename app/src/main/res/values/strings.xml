@@ -31,6 +31,7 @@
     <string name="enter_timer_name">Enter timer name</string>
     <string name="create_timer">Create Timer</string>
     <string name="timer_created">Timer created</string>
+    <string name="long_press_to_edit_hint">Tip: Long-press on a timer to edit its details</string>
     
     <!-- Countdown -->
     <string name="select_date">Select Date</string>

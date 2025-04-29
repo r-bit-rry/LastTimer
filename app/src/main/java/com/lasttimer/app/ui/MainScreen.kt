@@ -22,11 +22,15 @@ import androidx.compose.material.icons.filled.Timelapse
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,68 +46,88 @@ import com.lasttimer.app.ui.stopwatch.StopwatchScreen
 import com.lasttimer.app.ui.templates.TemplatesScreen
 import com.lasttimer.app.ui.timer.TimerScreen
 
-@OptIn(ExperimentalAnimationApi::class)
+@OptIn(ExperimentalAnimationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
     var selectedTab by remember { mutableStateOf(0) }
     var previousTab by remember { mutableStateOf(0) }
     
+    // Function to get current screen title based on selected tab
+    val screenTitle = when(selectedTab) {
+        0 -> stringResource(R.string.tab_timer)
+        1 -> stringResource(R.string.tab_stopwatch)
+        2 -> stringResource(R.string.tab_countdown)
+        3 -> stringResource(R.string.tab_group)
+        4 -> stringResource(R.string.tab_templates)
+        5 -> stringResource(R.string.settings)
+        else -> ""
+    }
+    
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(screenTitle) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            )
+        },
         bottomBar = {
             NavigationBar {
                 NavigationBarItem(
-                    icon = { Icon(Icons.Filled.Timer, contentDescription = null) },
-                    label = { Text(stringResource(R.string.tab_timer)) },
+                    icon = { Icon(Icons.Filled.Timer, contentDescription = stringResource(R.string.tab_timer)) },
                     selected = selectedTab == 0,
                     onClick = { 
                         previousTab = selectedTab
                         selectedTab = 0 
-                    }
+                    },
+                    label = { } // Empty label to remove text
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Filled.Timelapse, contentDescription = null) },
-                    label = { Text(stringResource(R.string.tab_stopwatch)) },
+                    icon = { Icon(Icons.Filled.Timelapse, contentDescription = stringResource(R.string.tab_stopwatch)) },
                     selected = selectedTab == 1,
                     onClick = { 
                         previousTab = selectedTab
                         selectedTab = 1 
-                    }
+                    },
+                    label = { } // Empty label to remove text
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Filled.DateRange, contentDescription = null) },
-                    label = { Text(stringResource(R.string.tab_countdown)) },
+                    icon = { Icon(Icons.Filled.DateRange, contentDescription = stringResource(R.string.tab_countdown)) },
                     selected = selectedTab == 2,
                     onClick = { 
                         previousTab = selectedTab
                         selectedTab = 2 
-                    }
+                    },
+                    label = { } // Empty label to remove text
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Filled.Layers, contentDescription = null) },
-                    label = { Text(stringResource(R.string.tab_group)) },
+                    icon = { Icon(Icons.Filled.Layers, contentDescription = stringResource(R.string.tab_group)) },
                     selected = selectedTab == 3,
                     onClick = { 
                         previousTab = selectedTab
                         selectedTab = 3 
-                    }
+                    },
+                    label = { } // Empty label to remove text
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Filled.Bookmark, contentDescription = null) },
-                    label = { Text(stringResource(R.string.tab_templates)) },
+                    icon = { Icon(Icons.Filled.Bookmark, contentDescription = stringResource(R.string.tab_templates)) },
                     selected = selectedTab == 4,
                     onClick = { 
                         previousTab = selectedTab
                         selectedTab = 4 
-                    }
+                    },
+                    label = { } // Empty label to remove text
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
-                    label = { Text(stringResource(R.string.settings)) },
+                    icon = { Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.settings)) },
                     selected = selectedTab == 5,
                     onClick = { 
                         previousTab = selectedTab
                         selectedTab = 5 
-                    }
+                    },
+                    label = { } // Empty label to remove text
                 )
             }
         }

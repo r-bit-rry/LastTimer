@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.IBinder
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -36,6 +38,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DisplayMode
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -343,9 +346,18 @@ fun CountdownItem(
     val isExpired = !isTargetInFuture && countdown.status != TimerStatus.RUNNING
     val dateFormat = SimpleDateFormat("MMM d, yyyy 'at' h:mm a", Locale.getDefault())
     
+    // State for edit dialog
+    var showEditDialog by remember { mutableStateOf(false) }
+    
     Card(
         modifier = Modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .clickable(onClick = { }) // Empty onClick to enable ripple effect
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onLongPress = { showEditDialog = true }
+                )
+            },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = if (isExpired) 
             CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
@@ -447,6 +459,45 @@ fun CountdownItem(
                 }
             }
         }
+    }
+    
+    if (showEditDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = { Text("Edit Date Countdown") },
+            containerColor = MaterialTheme.colorScheme.surface,
+            text = {
+                Column {
+                    // Name field
+                    OutlinedTextField(
+                        value = countdown.name,
+                        onValueChange = { /* We will need to implement this */ },
+                        label = { Text(stringResource(R.string.timer_name)) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Date and time fields
+                    Button(
+                        onClick = { /* We will need to implement this */ },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(dateFormat.format(targetDate))
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = { showEditDialog = false }) {
+                    Text("Update")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
     }
 }
 

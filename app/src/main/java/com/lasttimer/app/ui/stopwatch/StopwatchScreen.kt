@@ -7,6 +7,7 @@ import android.content.ServiceConnection
 import android.os.IBinder
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -54,6 +55,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
@@ -321,9 +323,18 @@ fun StopwatchItem(
     onStartStopwatch: () -> Unit,
     onDeleteStopwatch: () -> Unit
 ) {
+    // State for edit dialog
+    var showEditDialog by remember { mutableStateOf(false) }
+    
     Card(
         modifier = Modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .clickable(onClick = { }) // Empty onClick to enable ripple effect
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onLongPress = { showEditDialog = true }
+                )
+            },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
@@ -381,6 +392,34 @@ fun StopwatchItem(
                 }
             }
         }
+    }
+    
+    if (showEditDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = { Text("Edit Stopwatch") },
+            text = {
+                Column {
+                    // Name field
+                    OutlinedTextField(
+                        value = stopwatch.name,
+                        onValueChange = { /* We will need to implement this */ },
+                        label = { Text(stringResource(R.string.timer_name)) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = { showEditDialog = false }) {
+                    Text("Update")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
     }
 }
 

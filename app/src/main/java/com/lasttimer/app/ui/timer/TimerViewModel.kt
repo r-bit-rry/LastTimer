@@ -104,11 +104,27 @@ class TimerViewModel @Inject constructor(
         _newTimerRepeatCount.value = 0
     }
     
+    /**
+     * Generates a descriptive timer name based on the duration
+     */
+    private fun generateTimerName(hours: Int, minutes: Int, seconds: Int): String {
+        return when {
+            hours > 0 && minutes > 0 -> "$hours h $minutes min Timer"
+            hours > 0 -> "$hours Hour Timer"
+            minutes > 0 && seconds > 0 -> "$minutes min $seconds sec Timer"
+            minutes > 0 -> "$minutes Minute Timer" 
+            seconds > 0 -> "$seconds Second Timer"
+            else -> "Timer"
+        }
+    }
+    
     fun createTimer() {
         val hours = _newTimerHours.value
         val minutes = _newTimerMinutes.value
         val seconds = _newTimerSeconds.value
-        val name = _newTimerName.value.takeIf { it.isNotBlank() } ?: "Timer"
+        // Use the provided name if not blank, otherwise generate a name based on duration
+        val name = _newTimerName.value.takeIf { it.isNotBlank() } 
+            ?: generateTimerName(hours, minutes, seconds)
         
         val totalMillis = (hours * 3600 + minutes * 60 + seconds) * 1000L
         
@@ -135,8 +151,17 @@ class TimerViewModel @Inject constructor(
     
     fun startTimer(timerId: String, @Suppress("UNUSED_PARAMETER") serviceIntent: Intent) {
         viewModelScope.launch {
-            timerRepository.updateTimerStatus(timerId, TimerStatus.RUNNING)
-            timerRepository.updateLastUsedAt(timerId)
+            // Get the current timer status first
+            timerRepository.getTimerById(timerId).first()?.let { timer ->
+                // If the timer is in COMPLETED status, reset it first
+                if (timer.status == TimerStatus.COMPLETED) {
+                    timerRepository.resetTimer(timerId)
+                }
+                
+                // Now update to RUNNING status
+                timerRepository.updateTimerStatus(timerId, TimerStatus.RUNNING)
+                timerRepository.updateLastUsedAt(timerId)
+            }
         }
     }
     

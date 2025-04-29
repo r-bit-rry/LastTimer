@@ -14,6 +14,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +36,7 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -63,7 +65,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -338,6 +343,21 @@ fun TimerItem(
     )
     val status = timerState?.status ?: timer.status
     
+    // State for edit dialog
+    var showEditDialog by remember { mutableStateOf(false) }
+    
+    // States for editing
+    var editName by remember { mutableStateOf(timer.name) }
+    var editHours by remember { mutableStateOf((timer.durationMillis ?: 0) / (1000 * 60 * 60)) }
+    var editMinutes by remember { mutableStateOf(((timer.durationMillis ?: 0) % (1000 * 60 * 60)) / (1000 * 60)) }
+    var editSeconds by remember { mutableStateOf(((timer.durationMillis ?: 0) % (1000 * 60)) / 1000) }
+    var editRepeat by remember { mutableStateOf(timer.repeat ?: false) }
+    var editRepeatCount by remember { mutableStateOf(timer.repeatCount ?: 0) }
+    
+    // Create a context to use Material theme values
+    val hapticFeedback = androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    
     Card(
         modifier = Modifier
             .fillMaxWidth(),
@@ -347,6 +367,21 @@ fun TimerItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onLongPress = {
+                            haptic.performHapticFeedback(hapticFeedback)
+                            // Initialize edit states
+                            editName = timer.name
+                            editHours = (timer.durationMillis ?: 0) / (1000 * 60 * 60)
+                            editMinutes = ((timer.durationMillis ?: 0) % (1000 * 60 * 60)) / (1000 * 60)
+                            editSeconds = ((timer.durationMillis ?: 0) % (1000 * 60)) / 1000
+                            editRepeat = timer.repeat ?: false
+                            editRepeatCount = timer.repeatCount ?: 0
+                            showEditDialog = true
+                        }
+                    )
+                }
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -487,6 +522,101 @@ fun TimerItem(
             }
         }
     }
+    
+    if (showEditDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = { Text("Edit Timer") },
+            text = {
+                Column {
+                    // Name field
+                    OutlinedTextField(
+                        value = timer.name,
+                        onValueChange = { /* We will need to implement this */ },
+                        label = { Text(stringResource(R.string.timer_name)) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // Hours
+                        OutlinedTextField(
+                            value = ((timer.durationMillis ?: 0) / (1000 * 60 * 60)).toString(),
+                            onValueChange = { /* We will need to implement this */ },
+                            label = { Text(stringResource(R.string.hours)) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                        
+                        Spacer(modifier = Modifier.size(8.dp))
+                        
+                        // Minutes
+                        OutlinedTextField(
+                            value = (((timer.durationMillis ?: 0) % (1000 * 60 * 60)) / (1000 * 60)).toString(),
+                            onValueChange = { /* We will need to implement this */ },
+                            label = { Text(stringResource(R.string.minutes)) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                        
+                        Spacer(modifier = Modifier.size(8.dp))
+                        
+                        // Seconds
+                        OutlinedTextField(
+                            value = (((timer.durationMillis ?: 0) % (1000 * 60)) / 1000).toString(),
+                            onValueChange = { /* We will need to implement this */ },
+                            label = { Text(stringResource(R.string.seconds)) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Repeat timer option
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = timer.repeat ?: false,
+                            onCheckedChange = { /* We will need to implement this */ }
+                        )
+                        Text(
+                            text = stringResource(R.string.repeat_group),
+                            modifier = Modifier.clickable { /* We will need to implement this */ }
+                        )
+                    }
+                    
+                    // Repeat count field (only shown if repeat is enabled)
+                    if (timer.repeat == true) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        OutlinedTextField(
+                            value = (timer.repeatCount ?: 0).toString(),
+                            onValueChange = { /* We will need to implement this */ },
+                            label = { Text(stringResource(R.string.repeat_count)) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = { showEditDialog = false }) {
+                    Text("Update")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -552,15 +682,7 @@ fun CreateTimerDialog(
         title = { Text(stringResource(R.string.new_timer)) },
         text = {
             Column {
-                OutlinedTextField(
-                    value = nameState.value,
-                    onValueChange = onNameChange,
-                    label = { Text(stringResource(R.string.timer_name)) },
-                    placeholder = { Text(stringResource(R.string.enter_timer_name)) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
+                // Name field removed from initial dialog - will be auto-generated
                 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -638,6 +760,14 @@ fun CreateTimerDialog(
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
+                
+                // Add a hint about long-press to edit more details
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = stringResource(R.string.long_press_to_edit_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         },
         confirmButton = {
