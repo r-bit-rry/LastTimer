@@ -236,13 +236,15 @@ fun TimerScreen(
             hoursState = viewModel.newTimerHours.collectAsState(),
             minutesState = viewModel.newTimerMinutes.collectAsState(),
             secondsState = viewModel.newTimerSeconds.collectAsState(),
-            nameState = viewModel.newTimerName.collectAsState(),
+            // optional name field state (obsolete but retained for compatibility)
+            nameState = remember { mutableStateOf("") },
+            // optional name change callback (obsolete)
+            onNameChange = { },
             repeatState = viewModel.newTimerRepeat.collectAsState(),
             repeatCountState = viewModel.newTimerRepeatCount.collectAsState(),
             onHoursChange = { viewModel.updateNewTimerHours(it) },
             onMinutesChange = { viewModel.updateNewTimerMinutes(it) },
             onSecondsChange = { viewModel.updateNewTimerSeconds(it) },
-            onNameChange = { viewModel.updateNewTimerName(it) },
             onRepeatChange = { viewModel.updateNewTimerRepeat(it) },
             onRepeatCountChange = { viewModel.updateNewTimerRepeatCount(it) },
             onDismiss = { viewModel.hideCreateTimerDialog() },
@@ -351,8 +353,8 @@ fun TimerItem(
     var editHours by remember { mutableStateOf((timer.durationMillis ?: 0) / (1000 * 60 * 60)) }
     var editMinutes by remember { mutableStateOf(((timer.durationMillis ?: 0) % (1000 * 60 * 60)) / (1000 * 60)) }
     var editSeconds by remember { mutableStateOf(((timer.durationMillis ?: 0) % (1000 * 60)) / 1000) }
-    var editRepeat by remember { mutableStateOf(timer.repeat ?: false) }
-    var editRepeatCount by remember { mutableStateOf(timer.repeatCount ?: 0) }
+    var editRepeat by remember { mutableStateOf(timer.repeat) }
+    var editRepeatCount by remember { mutableStateOf(timer.repeatCount) }
     
     // Create a context to use Material theme values
     val hapticFeedback = androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress
@@ -376,7 +378,7 @@ fun TimerItem(
                             editHours = (timer.durationMillis ?: 0) / (1000 * 60 * 60)
                             editMinutes = ((timer.durationMillis ?: 0) % (1000 * 60 * 60)) / (1000 * 60)
                             editSeconds = ((timer.durationMillis ?: 0) % (1000 * 60)) / 1000
-                            editRepeat = timer.repeat ?: false
+                            editRepeat = timer.repeat
                             editRepeatCount = timer.repeatCount ?: 0
                             showEditDialog = true
                         }
@@ -665,13 +667,15 @@ fun CreateTimerDialog(
     hoursState: androidx.compose.runtime.State<Int>,
     minutesState: androidx.compose.runtime.State<Int>,
     secondsState: androidx.compose.runtime.State<Int>,
-    nameState: androidx.compose.runtime.State<String>,
+    // optional name field state (obsolete but retained for compatibility)
+    nameState: androidx.compose.runtime.State<String> = remember { mutableStateOf("") },
+    // optional name change callback (obsolete)
+    onNameChange: (String) -> Unit = {},
     repeatState: androidx.compose.runtime.State<Boolean> = androidx.compose.runtime.remember { mutableStateOf(false) },
     repeatCountState: androidx.compose.runtime.State<Int> = androidx.compose.runtime.remember { mutableStateOf(0) },
     onHoursChange: (Int) -> Unit,
     onMinutesChange: (Int) -> Unit,
     onSecondsChange: (Int) -> Unit,
-    onNameChange: (String) -> Unit,
     onRepeatChange: (Boolean) -> Unit = {},
     onRepeatCountChange: (Int) -> Unit = {},
     onDismiss: () -> Unit,

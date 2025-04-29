@@ -128,6 +128,10 @@ This document tracks active development tasks, design decisions, implementation 
   - Updated imports for gesture detection APIs: pointerInput and detectTapGestures
   - Resolved composable context issues for dialog components
   - Updated deprecated dialog API usage to align with Material3 standards
+- [x] Code Cleanup:
+  - Removed unused `group` variable in `TimerService.startTimerGroup`
+  - Simplified redundant Elvis (`?:`) operators in `TimerScreen.kt` for non-nullable properties
+  - Removed unused `nameState` and `onNameChange` parameters from `CreateTimerDialog`
 
 ## UI/UX Improvement Plan
 
@@ -141,9 +145,10 @@ The following improvements are being implemented to enhance the user experience:
    - Made timer name field optional and auto-generate descriptive names based on duration
    - Added hint about long-press functionality for editing more details
 
-3. ✅ **Timer Reset After Completion Fix**
+3. 🔄 **Timer Reset After Completion Fix**
    - Fixed issue where completed timers would not reset properly when started again
    - Ensures timers always start from the beginning when activated after completion
+   - Fix timer not being reset when done, add a reset button instead of play button when it is done
 
 4. ✅ **Stopwatch Stop/Reset Functionality**
    - Added distinct stop and reset functions for stopwatch
@@ -160,6 +165,23 @@ The following improvements are being implemented to enhance the user experience:
 7. 🔄 **Template Functionality Fix**
    - Ensuring template saving and loading works correctly
    - Improving the template selection interface
+   - When marking a timer for the template, it creates infinite amount of templates
+
+8. ⏳ **Settings tab Fix**
+   - Ensure settings display correctly
+   - Ensure toggles take affect
+
+9. ⏳ **Remove redundant title**
+   - There are two titles at the top, saying the same, remove the lower one, keep the upper one.
+   - At the bottom of the screen there is a large unneeded padding from the bottom to the icons, increase the icon size a bit, and decrease the size of the padding.
+
+10. ⏳ **Design overhaul**
+    - Make the design more slick and minimalistic
+    - Allow swipe sideways to change between tabs
+    - Create a nicer timepicker with swiping up and down across time (hour minutes seconds)
+
+11. ⏳ **Group cascading timer**
+    - Fix starting the timer group/cascading, currently play button doesn't do much
 
 Legend:
 - ✅ Completed

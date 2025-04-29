@@ -496,7 +496,7 @@ class TimerService : Service() {
     // New methods for handling timer groups
     
     suspend fun startTimerGroup(groupId: String) {
-        val group = timerRepository.getGroupById(groupId).first() ?: return
+        timerRepository.getGroupById(groupId).first() ?: return
         
         // Update last used timestamp
         timerRepository.updateGroupLastUsedAt(groupId, Date())
