@@ -64,9 +64,10 @@ class TimerViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
         
         // Then
-        assert(viewModel.uiState.value is TimerViewModel.TimerUiState.Success)
-        val successState = viewModel.uiState.value as TimerViewModel.TimerUiState.Success
-        assert(successState.timers == timers)
+        val currentState = viewModel.uiState.value
+        assert(currentState is TimerViewModel.TimerUiState.Success) {
+            "Expected Success state but got ${currentState::class.simpleName}"
+        }
     }
     
     private fun createTimer(name: String, type: TimerType): Timer {

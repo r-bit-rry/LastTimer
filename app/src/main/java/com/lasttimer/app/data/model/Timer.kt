@@ -42,8 +42,11 @@ data class Timer(
     val status: TimerStatus = TimerStatus.IDLE
 )
 
-@Entity(tableName = "timer_group_items",
-    primaryKeys = ["groupId", "timerId", "position"])
+@Entity(
+    tableName = "timer_group_items",
+    primaryKeys = ["groupId", "timerId", "position"],
+    indices = [androidx.room.Index("timerId")]
+)
 data class TimerGroupItem(
     val groupId: String,
     val timerId: String,

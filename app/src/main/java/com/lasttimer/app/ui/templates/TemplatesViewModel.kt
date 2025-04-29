@@ -51,11 +51,11 @@ class TemplatesViewModel @Inject constructor(
     val selectedTemplate: StateFlow<Timer?> = _selectedTemplate.asStateFlow()
     
     init {
-        loadTemplates()
+        refreshTemplates()
         loadAvailableTimers()
     }
     
-    private fun loadTemplates() {
+    fun refreshTemplates() {
         viewModelScope.launch {
             try {
                 _uiState.value = TemplatesUiState.Success(timerRepository.getAllTemplates())

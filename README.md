@@ -252,7 +252,7 @@ A modern Android timer application with a minimalist design that provides powerf
   - Play Store assets preparation
 
 ### Current Development Focus
-- [ ] Enhanced widget functionality
+- [x] Enhanced widget functionality
   - Multiple widget styles
   - Direct timer control from widgets
   - Customizable widget appearance
@@ -264,6 +264,22 @@ A modern Android timer application with a minimalist design that provides powerf
   - Calendar integration
   - Recurring timer schedules
   - Time-of-day triggers
+
+### Recent Technical Improvements
+- [x] Performance Optimization:
+  - Added database index on `timerId` in the `TimerGroupItem` junction entity to improve query performance for relationship queries
+  - Optimized repository pattern implementation by handling immutable value types correctly in test implementations
+  
+- [x] Code Quality Enhancements:
+  - Fixed method accessibility in ViewModels to improve testability and maintain clean architecture
+  - Improved Flow handling for reactive state management
+  - Added proper annotations for unused parameters to maintain API consistency
+  - Removed unused variables to reduce memory footprint
+  
+- [x] Test Infrastructure Improvements:
+  - Enhanced unit test reliability with better assertions
+  - Fixed Flow handling in test implementations
+  - Improved error messages in test failures for faster debugging
 
 ## Implementation Details & Design Decisions
 

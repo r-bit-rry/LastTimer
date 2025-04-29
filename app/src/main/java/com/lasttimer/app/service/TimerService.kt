@@ -514,8 +514,6 @@ class TimerService : Service() {
     }
     
     private suspend fun handleNextTimerInGroup(groupId: String, currentTimerId: String) {
-        val group = timerRepository.getGroupById(groupId).first() ?: return
-        
         // Get all timers in the group, sorted by position
         val groupItems = timerRepository.getGroupItems(groupId).first()
             .sortedBy { it.position }
@@ -539,7 +537,8 @@ class TimerService : Service() {
             startTimer(firstItem.timerId)
             
             // Send a notification that the group has completed one cycle
-            val notification = createNotification("Timer group ${group.name} cycle completed.")
+            val groupName = timerRepository.getGroupById(groupId).first()?.name ?: "Unknown"
+            val notification = createNotification("Timer group $groupName cycle completed.")
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.notify(NOTIFICATION_ID + 1, notification.build())
         }

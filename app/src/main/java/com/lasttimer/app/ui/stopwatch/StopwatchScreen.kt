@@ -268,6 +268,8 @@ fun StopwatchScreen(
 @Composable
 fun StopwatchList(
     stopwatchesFlow: Flow<List<Timer>>,
+    // timerService not used but kept for future use or interface consistency
+    @Suppress("UNUSED_PARAMETER") 
     timerService: TimerService?,
     onStartStopwatch: (String) -> Unit,
     onDeleteStopwatch: (String) -> Unit

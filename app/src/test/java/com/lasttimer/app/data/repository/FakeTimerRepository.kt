@@ -165,12 +165,21 @@ class FakeTimerRepository {
         // Remove the item at the specified position
         timerGroupItems.removeIf { it.groupId == groupId && it.position == position }
         
-        // Reorder remaining items
-        timerGroupItems.forEach { item ->
-            if (item.groupId == groupId && item.position > position) {
-                item.position = item.position - 1
-            }
-        }
+        // Reorder remaining items - need to create new objects since position is a val
+        val itemsToUpdate = timerGroupItems.filter { it.groupId == groupId && it.position > position }
+        
+        // Remove items that need updating
+        timerGroupItems.removeAll(itemsToUpdate)
+        
+        // Add back updated items with new positions
+        timerGroupItems.addAll(itemsToUpdate.map { item ->
+            TimerGroupItem(
+                groupId = item.groupId,
+                timerId = item.timerId,
+                position = item.position - 1,
+                durationOverrideMillis = item.durationOverrideMillis
+            )
+        })
     }
     
     fun getLapsByTimerId(timerId: String): Flow<List<TimerLap>> {
