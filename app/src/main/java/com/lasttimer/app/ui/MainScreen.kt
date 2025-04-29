@@ -132,7 +132,7 @@ fun MainScreen() {
                     3 -> GroupScreen()
                     4 -> TemplatesScreen(
                         onNavigateBack = { selectedTab = 0 }, // Navigate back to timer screen
-                        onNavigateToTimer = { timerId -> selectedTab = 0 } // Navigate to timer screen with the new timer
+                        onNavigateToTimer = { _ -> selectedTab = 0 } // Navigate to timer screen with the new timer
                     )
                     5 -> SettingsScreen()
                 }

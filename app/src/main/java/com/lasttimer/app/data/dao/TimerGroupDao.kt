@@ -15,7 +15,7 @@ import java.util.Date
 
 @Dao
 interface TimerGroupDao {
-    @Query("SELECT * FROM timer_groups ORDER BY lastUsedAt DESC NULLS LAST")
+    @Query("SELECT * FROM timer_groups ORDER BY CASE WHEN lastUsedAt IS NULL THEN 1 ELSE 0 END, lastUsedAt DESC")
     fun getAllGroups(): Flow<List<TimerGroup>>
     
     @Query("SELECT * FROM timer_groups WHERE id = :id")
@@ -37,7 +37,7 @@ interface TimerGroupDao {
     fun getGroupItems(groupId: String): Flow<List<TimerGroupItem>>
     
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertGroupItem(item: TimerGroupItem)
+    suspend fun insertGroupItem(item: TimerGroupItem): Long
     
     @Delete
     suspend fun deleteGroupItem(item: TimerGroupItem)

@@ -5,9 +5,8 @@ import android.content.Context
 import android.os.Build
 import android.os.StrictMode
 import android.util.Log
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleObserver
-import androidx.lifecycle.OnLifecycleEvent
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,7 +23,7 @@ import java.util.Locale
 class PerformanceOptimizationManager(
     private val application: Application,
     private val isDebugMode: Boolean = false
-) : LifecycleObserver {
+) : DefaultLifecycleObserver {
     
     private val TAG = "PerformanceManager"
     private val scope = CoroutineScope(Dispatchers.Default + Job())
@@ -198,16 +197,14 @@ class PerformanceOptimizationManager(
         }
     }
     
-    @OnLifecycleEvent(Lifecycle.Event.ON_START)
-    fun onAppForeground() {
+    override fun onStart(owner: LifecycleOwner) {
         if (memoryMonitoringEnabled) {
             Log.d(TAG, "App moved to foreground")
             MemoryMonitor.logMemoryUsage(application, "$TAG-Foreground")
         }
     }
     
-    @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
-    fun onAppBackground() {
+    override fun onStop(owner: LifecycleOwner) {
         if (memoryMonitoringEnabled) {
             Log.d(TAG, "App moved to background")
             MemoryMonitor.logMemoryUsage(application, "$TAG-Background")

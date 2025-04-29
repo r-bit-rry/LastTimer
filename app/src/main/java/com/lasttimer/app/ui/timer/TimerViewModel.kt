@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.lasttimer.app.data.model.Timer
 import com.lasttimer.app.data.model.TimerStatus
 import com.lasttimer.app.data.model.TimerType
-import com.lasttimer.app.data.repository.TimerRepository
+import com.lasttimer.app.data.repository.ITimerRepository
 import com.lasttimer.app.service.TimerService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
@@ -20,7 +20,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TimerViewModel @Inject constructor(
-    private val timerRepository: TimerRepository
+    private val timerRepository: ITimerRepository
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow<TimerUiState>(TimerUiState.Loading)
@@ -51,7 +51,7 @@ class TimerViewModel @Inject constructor(
         loadTimers()
     }
     
-    private fun loadTimers() {
+    fun loadTimers() {
         viewModelScope.launch {
             try {
                 _uiState.value = TimerUiState.Success(timerRepository.getTimersByType(TimerType.COUNTDOWN))
@@ -132,27 +132,27 @@ class TimerViewModel @Inject constructor(
         }
     }
     
-    fun startTimer(timerId: String, serviceIntent: Intent) {
+    fun startTimer(timerId: String, @Suppress("UNUSED_PARAMETER") serviceIntent: Intent) {
         viewModelScope.launch {
             timerRepository.updateTimerStatus(timerId, TimerStatus.RUNNING)
             timerRepository.updateLastUsedAt(timerId)
         }
     }
     
-    fun pauseTimer(timerId: String, serviceIntent: Intent) {
+    fun pauseTimer(timerId: String, @Suppress("UNUSED_PARAMETER") serviceIntent: Intent) {
         viewModelScope.launch {
             timerRepository.updateTimerStatus(timerId, TimerStatus.PAUSED)
         }
     }
     
-    fun resumeTimer(timerId: String, serviceIntent: Intent) {
+    fun resumeTimer(timerId: String, @Suppress("UNUSED_PARAMETER") serviceIntent: Intent) {
         viewModelScope.launch {
             timerRepository.updateTimerStatus(timerId, TimerStatus.RUNNING)
             timerRepository.updateLastUsedAt(timerId)
         }
     }
     
-    fun stopTimer(timerId: String, serviceIntent: Intent) {
+    fun stopTimer(timerId: String, @Suppress("UNUSED_PARAMETER") serviceIntent: Intent) {
         viewModelScope.launch {
             timerRepository.resetTimer(timerId)
         }
@@ -160,7 +160,7 @@ class TimerViewModel @Inject constructor(
     
     fun deleteTimer(timerId: String) {
         viewModelScope.launch {
-            val timer = timerRepository.getTimerById(timerId).collect { timer ->
+            timerRepository.getTimerById(timerId).collect { timer ->
                 timer?.let {
                     timerRepository.deleteTimer(it)
                 }
@@ -170,7 +170,7 @@ class TimerViewModel @Inject constructor(
     
     fun saveAsTemplate(timerId: String) {
         viewModelScope.launch {
-            val timer = timerRepository.getTimerById(timerId).collect { timer ->
+            timerRepository.getTimerById(timerId).collect { timer ->
                 timer?.let {
                     // Create a copy of the timer as a template
                     val template = it.copy(

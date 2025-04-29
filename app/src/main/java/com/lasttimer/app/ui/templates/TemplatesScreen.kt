@@ -19,6 +19,10 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.Animatable
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -50,7 +54,6 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -99,7 +102,7 @@ fun TemplatesScreen(
             )
         },
         floatingActionButton = {
-            val scale = remember { androidx.compose.animation.core.Animatable(0f) }
+            val scale = remember { Animatable(0f) }
             
             // Animate the FAB when it appears
             LaunchedEffect(Unit) {
@@ -113,8 +116,7 @@ fun TemplatesScreen(
             }
             
             FloatingActionButton(
-                onClick = { viewModel.showCreateTemplateDialog() },
-                modifier = Modifier.scale(scale.value)
+                onClick = { viewModel.showCreateTemplateDialog() }
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Create Template")
             }
@@ -212,7 +214,6 @@ fun TemplatesScreen(
         }
         
         AlertDialog(
-            modifier = Modifier.scale(dialogAnimation.value),
             onDismissRequest = { viewModel.hideCreateTemplateDialog() },
             title = { Text("Create Timer Template") },
             text = {
@@ -260,7 +261,6 @@ fun TemplatesScreen(
         }
         
         AlertDialog(
-            modifier = Modifier.scale(dialogAnimation.value),
             onDismissRequest = { viewModel.hideCreateFromTemplateDialog() },
             title = { Text("Create Timer from Template") },
             text = {

@@ -11,22 +11,31 @@ import android.os.VibratorManager
 import com.lasttimer.app.data.preferences.SettingsPreferences
 import com.lasttimer.app.data.repository.TimerRepository
 import com.lasttimer.app.service.TimerService
-import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-@AndroidEntryPoint
 class TimerActionReceiver : BroadcastReceiver() {
     
-    @Inject
-    lateinit var timerRepository: TimerRepository
+    @InstallIn(SingletonComponent::class)
+    @EntryPoint
+    interface TimerActionReceiverEntryPoint {
+        fun timerRepository(): TimerRepository
+        fun settingsPreferences(): SettingsPreferences
+    }
     
-    @Inject
-    lateinit var settingsPreferences: SettingsPreferences
+    private fun getEntryPoint(context: Context): TimerActionReceiverEntryPoint {
+        return EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            TimerActionReceiverEntryPoint::class.java
+        )
+    }
     
     private val job = SupervisorJob()
     private val scope = CoroutineScope(Dispatchers.Main + job)
@@ -53,10 +62,13 @@ class TimerActionReceiver : BroadcastReceiver() {
         }
     }
     
-    private suspend fun handleTimerCompleted(context: Context, timerId: String) {
+    private suspend fun handleTimerCompleted(context: Context, @Suppress("UNUSED_PARAMETER") timerId: String) {
+        // Get EntryPoint for dependency access
+        val entryPoint = getEntryPoint(context)
+        
         // Get sound and vibration preferences
-        val soundEnabled = settingsPreferences.soundEnabled.first()
-        val vibrationEnabled = settingsPreferences.vibrationEnabled.first()
+        val soundEnabled = entryPoint.settingsPreferences().soundEnabled.first()
+        val vibrationEnabled = entryPoint.settingsPreferences().vibrationEnabled.first()
         
         // Play sound if enabled
         if (soundEnabled) {

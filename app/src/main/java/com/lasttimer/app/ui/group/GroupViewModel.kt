@@ -139,6 +139,11 @@ class GroupViewModel @Inject constructor(
         }
     }
     
+    fun clearSelectedGroup() {
+        _selectedGroup.value = null
+        _selectedGroupTimers.value = emptyList()
+    }
+    
     private fun loadGroupTimers(groupId: String) {
         viewModelScope.launch {
             val groupItems = timerRepository.getGroupItems(groupId).first()
@@ -267,10 +272,10 @@ class GroupViewModel @Inject constructor(
         }
     }
     
-    fun startGroup(groupId: String, serviceIntent: Intent) {
+    fun startGroup(groupId: String, @Suppress("UNUSED_PARAMETER") serviceIntent: Intent) {
         viewModelScope.launch {
-            val group = timerRepository.getGroupById(groupId).first() ?: return@launch
-            timerRepository.updateGroupLastUsedAt(groupId)
+            // Update last used timestamp
+            timerRepository.updateGroupLastUsedAt(groupId, Date())
             
             // Get all timers in the group in order
             val groupItems = timerRepository.getGroupItems(groupId).first()

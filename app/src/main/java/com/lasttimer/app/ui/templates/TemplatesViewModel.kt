@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.lasttimer.app.data.model.Timer
 import com.lasttimer.app.data.model.TimerStatus
 import com.lasttimer.app.data.model.TimerType
-import com.lasttimer.app.data.repository.TimerRepository
+import com.lasttimer.app.data.repository.ITimerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +19,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TemplatesViewModel @Inject constructor(
-    private val timerRepository: TimerRepository
+    private val timerRepository: ITimerRepository
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow<TemplatesUiState>(TemplatesUiState.Loading)

@@ -102,7 +102,7 @@ class StopwatchViewModel @Inject constructor(
         }
     }
     
-    fun startStopwatch(timerId: String, serviceIntent: Intent) {
+    fun startStopwatch(timerId: String, @Suppress("UNUSED_PARAMETER") serviceIntent: Intent) {
         viewModelScope.launch {
             val stopwatch = timerRepository.getTimerById(timerId).first()
             
@@ -116,20 +116,20 @@ class StopwatchViewModel @Inject constructor(
         }
     }
     
-    fun pauseStopwatch(timerId: String, serviceIntent: Intent) {
+    fun pauseStopwatch(timerId: String, @Suppress("UNUSED_PARAMETER") serviceIntent: Intent) {
         viewModelScope.launch {
             timerRepository.updateTimerStatus(timerId, TimerStatus.PAUSED)
         }
     }
     
-    fun resumeStopwatch(timerId: String, serviceIntent: Intent) {
+    fun resumeStopwatch(timerId: String, @Suppress("UNUSED_PARAMETER") serviceIntent: Intent) {
         viewModelScope.launch {
             timerRepository.updateTimerStatus(timerId, TimerStatus.RUNNING)
             timerRepository.updateLastUsedAt(timerId)
         }
     }
     
-    fun resetStopwatch(timerId: String, serviceIntent: Intent) {
+    fun resetStopwatch(timerId: String, @Suppress("UNUSED_PARAMETER") serviceIntent: Intent) {
         viewModelScope.launch {
             timerRepository.resetTimer(timerId)
             timerRepository.deleteAllLapsForTimer(timerId)

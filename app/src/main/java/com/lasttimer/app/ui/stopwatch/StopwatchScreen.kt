@@ -272,9 +272,10 @@ fun StopwatchList(
     onStartStopwatch: (String) -> Unit,
     onDeleteStopwatch: (String) -> Unit
 ) {
-    val stopwatches by remember(stopwatchesFlow) {
+    val stopwatchesState = remember(stopwatchesFlow) {
         mutableStateOf<List<Timer>>(emptyList())
     }
+    var stopwatches by stopwatchesState
     
     // Collect stopwatches from the flow
     LaunchedEffect(stopwatchesFlow) {

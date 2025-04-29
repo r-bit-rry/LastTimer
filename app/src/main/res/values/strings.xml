@@ -52,7 +52,7 @@
     <string name="repeat_group">Repeat entire group</string>
     <string name="repeat_count">Repeat count (0 for infinite)</string>
     <string name="add_to_group">Add to Group</string>
-    <string name="select_timer">Select Timer</string>
+    <string name="select_timer_for_group">Select Timer</string>
     <string name="reorder_timers">Reorder Timers</string>
     <string name="no_groups_found">No timer groups found.\nCreate one to get started!</string>
     <string name="no_timers_in_group">No timers in this group yet.\nAdd timers to get started!</string>
@@ -70,7 +70,7 @@
     
     <!-- Widget -->
     <string name="widget_configuration">Widget Configuration</string>
-    <string name="select_timer">Select Timer</string>
+    <string name="widget_timer_select">Select Timer</string>
     <string name="widget_added">Widget added</string>
     
     <!-- Errors and Info -->

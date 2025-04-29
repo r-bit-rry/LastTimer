@@ -1,7 +1,9 @@
 package com.lasttimer.app.data.repository
 
-import com.lasttimer.app.data.dao.TimerDao
 import com.lasttimer.app.data.model.Timer
+import com.lasttimer.app.data.model.TimerGroup
+import com.lasttimer.app.data.model.TimerGroupItem
+import com.lasttimer.app.data.model.TimerLap
 import com.lasttimer.app.data.model.TimerStatus
 import com.lasttimer.app.data.model.TimerType
 import kotlinx.coroutines.flow.Flow
@@ -12,61 +14,184 @@ import java.util.UUID
 /**
  * Fake repository implementation for testing
  */
-class FakeTimerRepository : TimerRepository {
+class FakeTimerRepository {
     
     private val timers = mutableListOf<Timer>()
+    private val timerLaps = mutableListOf<TimerLap>()
+    private val timerGroups = mutableListOf<TimerGroup>()
+    private val timerGroupItems = mutableListOf<TimerGroupItem>()
     
-    override fun getAllTimers(): Flow<List<Timer>> {
+    fun getAllTimers(): Flow<List<Timer>> {
         return flowOf(timers)
     }
     
-    override fun getTimersByType(type: TimerType): Flow<List<Timer>> {
+    fun getTimersByType(type: TimerType): Flow<List<Timer>> {
         return flowOf(timers.filter { it.type == type })
     }
     
-    override fun getAllTemplates(): Flow<List<Timer>> {
+    fun getAllTemplates(): Flow<List<Timer>> {
         return flowOf(timers.filter { it.isTemplate })
     }
     
-    override fun getTimerById(id: String): Flow<Timer?> {
+    fun getTimerById(id: String): Flow<Timer?> {
         return flowOf(timers.find { it.id == id })
     }
     
-    override suspend fun saveTimer(timer: Timer) {
+    suspend fun saveTimer(timer: Timer): Long {
         val existingIndex = timers.indexOfFirst { it.id == timer.id }
         if (existingIndex >= 0) {
             timers[existingIndex] = timer
         } else {
             timers.add(timer)
         }
+        return timer.id.hashCode().toLong()
     }
     
-    override suspend fun updateTimerStatus(id: String, status: TimerStatus) {
-        val existingIndex = timers.indexOfFirst { it.id == id }
+    suspend fun updateTimer(timer: Timer) {
+        val existingIndex = timers.indexOfFirst { it.id == timer.id }
+        if (existingIndex >= 0) {
+            timers[existingIndex] = timer
+        }
+    }
+    
+    suspend fun updateTimerStatus(timerId: String, status: TimerStatus) {
+        val existingIndex = timers.indexOfFirst { it.id == timerId }
         if (existingIndex >= 0) {
             val timer = timers[existingIndex]
             timers[existingIndex] = timer.copy(status = status)
         }
     }
     
-    override suspend fun updateElapsedTime(id: String, elapsedTimeMillis: Long) {
-        val existingIndex = timers.indexOfFirst { it.id == id }
+    suspend fun updateElapsedTime(timerId: String, elapsedTimeMillis: Long) {
+        val existingIndex = timers.indexOfFirst { it.id == timerId }
         if (existingIndex >= 0) {
             val timer = timers[existingIndex]
             timers[existingIndex] = timer.copy(elapsedTimeMillis = elapsedTimeMillis)
         }
     }
     
-    override suspend fun updateLastUsedAt(id: String) {
-        val existingIndex = timers.indexOfFirst { it.id == id }
+    suspend fun updateLastUsedAt(timerId: String, lastUsedAt: Date = Date()) {
+        val existingIndex = timers.indexOfFirst { it.id == timerId }
         if (existingIndex >= 0) {
             val timer = timers[existingIndex]
-            timers[existingIndex] = timer.copy(lastUsedAt = Date())
+            timers[existingIndex] = timer.copy(lastUsedAt = lastUsedAt)
         }
     }
     
-    override suspend fun deleteTimer(timer: Timer) {
+    suspend fun deleteTimer(timer: Timer) {
         timers.removeIf { it.id == timer.id }
+    }
+    
+    suspend fun resetTimer(timerId: String) {
+        val existingIndex = timers.indexOfFirst { it.id == timerId }
+        if (existingIndex >= 0) {
+            val timer = timers[existingIndex]
+            timers[existingIndex] = timer.copy(
+                elapsedTimeMillis = 0,
+                status = TimerStatus.IDLE
+            )
+        }
+    }
+    
+    fun getTimersByStatus(status: TimerStatus): Flow<List<Timer>> {
+        return flowOf(timers.filter { it.status == status })
+    }
+    
+    fun getTimersByCategory(category: String): Flow<List<Timer>> {
+        return flowOf(timers.filter { it.category == category })
+    }
+    
+    // Timer Group operations
+    fun getAllGroups(): Flow<List<TimerGroup>> {
+        return flowOf(timerGroups)
+    }
+    
+    fun getGroupById(id: String): Flow<TimerGroup?> {
+        return flowOf(timerGroups.find { it.id == id })
+    }
+    
+    suspend fun saveGroup(timerGroup: TimerGroup): Long {
+        val existingIndex = timerGroups.indexOfFirst { it.id == timerGroup.id }
+        if (existingIndex >= 0) {
+            timerGroups[existingIndex] = timerGroup
+        } else {
+            timerGroups.add(timerGroup)
+        }
+        return timerGroup.id.hashCode().toLong()
+    }
+    
+    suspend fun updateGroup(timerGroup: TimerGroup) {
+        val existingIndex = timerGroups.indexOfFirst { it.id == timerGroup.id }
+        if (existingIndex >= 0) {
+            timerGroups[existingIndex] = timerGroup
+        }
+    }
+    
+    suspend fun deleteGroup(timerGroup: TimerGroup) {
+        timerGroups.removeIf { it.id == timerGroup.id }
+    }
+    
+    suspend fun updateGroupLastUsedAt(groupId: String, lastUsedAt: Date = Date()) {
+        val existingIndex = timerGroups.indexOfFirst { it.id == groupId }
+        if (existingIndex >= 0) {
+            val group = timerGroups[existingIndex]
+            timerGroups[existingIndex] = group.copy(lastUsedAt = lastUsedAt)
+        }
+    }
+    
+    fun getGroupItems(groupId: String): Flow<List<TimerGroupItem>> {
+        return flowOf(timerGroupItems.filter { it.groupId == groupId }.sortedBy { it.position })
+    }
+    
+    suspend fun saveGroupItem(item: TimerGroupItem): Long {
+        val existingIndex = timerGroupItems.indexOfFirst { it.groupId == item.groupId && it.timerId == item.timerId && it.position == item.position }
+        if (existingIndex >= 0) {
+            timerGroupItems[existingIndex] = item
+        } else {
+            timerGroupItems.add(item)
+        }
+        return (item.groupId + item.timerId + item.position).hashCode().toLong()
+    }
+    
+    suspend fun deleteGroupItem(item: TimerGroupItem) {
+        timerGroupItems.removeIf { it.groupId == item.groupId && it.timerId == item.timerId && it.position == item.position }
+    }
+    
+    suspend fun deleteAllGroupItems(groupId: String) {
+        timerGroupItems.removeIf { it.groupId == groupId }
+    }
+    
+    suspend fun deleteItemAndReorder(groupId: String, position: Int) {
+        // Remove the item at the specified position
+        timerGroupItems.removeIf { it.groupId == groupId && it.position == position }
+        
+        // Reorder remaining items
+        timerGroupItems.forEach { item ->
+            if (item.groupId == groupId && item.position > position) {
+                item.position = item.position - 1
+            }
+        }
+    }
+    
+    fun getLapsByTimerId(timerId: String): Flow<List<TimerLap>> {
+        return flowOf(timerLaps.filter { it.timerId == timerId }.sortedBy { it.lapNumber })
+    }
+    
+    suspend fun saveLap(lap: TimerLap): Long {
+        timerLaps.add(lap)
+        return lap.id.hashCode().toLong()
+    }
+    
+    suspend fun deleteLap(lap: TimerLap) {
+        timerLaps.removeIf { it.id == lap.id }
+    }
+    
+    suspend fun deleteAllLapsForTimer(timerId: String) {
+        timerLaps.removeIf { it.timerId == timerId }
+    }
+    
+    suspend fun getLapCount(timerId: String): Int {
+        return timerLaps.count { it.timerId == timerId }
     }
     
     // Helper method for tests to add sample data
@@ -126,5 +251,8 @@ class FakeTimerRepository : TimerRepository {
     // Helper method to clear data
     fun clearData() {
         timers.clear()
+        timerLaps.clear()
+        timerGroups.clear()
+        timerGroupItems.clear()
     }
 }

@@ -138,16 +138,16 @@ fun GroupScreen(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ),
-                navigationIcon = if (selectedGroup != null) {
-                    {
-                        IconButton(onClick = { viewModel.selectGroup(TimerGroup("", "")) }) {
+                navigationIcon = {
+                    if (selectedGroup != null) {
+                        IconButton(onClick = { viewModel.clearSelectedGroup() }) {
                             Icon(
-                                imageVector = androidx.compose.material.icons.Icons.Default.ArrowBack,
+                                imageVector = Icons.Default.ArrowBack,
                                 contentDescription = "Back"
                             )
                         }
                     }
-                } else null
+                }
             )
         },
         floatingActionButton = {
@@ -258,9 +258,10 @@ fun GroupList(
     onDeleteGroup: (TimerGroup) -> Unit,
     onStartGroup: (String) -> Unit
 ) {
-    val groups by remember(groupsFlow) {
+    val groupsState = remember(groupsFlow) {
         mutableStateOf<List<TimerGroup>>(emptyList())
     }
+    var groups by groupsState
     
     // Collect groups from the flow
     LaunchedEffect(groupsFlow) {
@@ -388,7 +389,7 @@ fun GroupItem(
 @Composable
 fun GroupDetailScreen(
     timers: List<Timer>,
-    onAddTimer: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onAddTimer: () -> Unit,
     onRemoveTimer: (String) -> Unit,
     onMoveUp: (Int) -> Unit,
     onMoveDown: (Int) -> Unit
@@ -501,7 +502,7 @@ fun GroupTimerItem(
                         "Countdown: ${if (hours > 0) "${hours}h " else ""}${minutes}m ${seconds}s"
                     }
                     com.lasttimer.app.data.model.TimerType.STOPWATCH -> "Stopwatch"
-                    com.lasttimer.app.data.model.TimerType.DATE_COUNTDOWN -> "Date Countdown: ${timer.targetDate?.toLocaleString() ?: ""}"
+                    com.lasttimer.app.data.model.TimerType.DATE_COUNTDOWN -> "Date Countdown: ${timer.targetDate?.toString() ?: ""}"
                 },
                 style = MaterialTheme.typography.bodyMedium
             )

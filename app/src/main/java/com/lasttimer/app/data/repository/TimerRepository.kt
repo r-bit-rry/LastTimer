@@ -19,75 +19,75 @@ class TimerRepository @Inject constructor(
     private val timerDao: TimerDao,
     private val timerGroupDao: TimerGroupDao,
     private val timerLapDao: TimerLapDao
-) {
+) : ITimerRepository {
     // Timer operations
-    fun getAllTimers(): Flow<List<Timer>> = timerDao.getAllTimers()
+    override fun getAllTimers(): Flow<List<Timer>> = timerDao.getAllTimers()
     
-    fun getTimersByType(type: TimerType): Flow<List<Timer>> = timerDao.getTimersByType(type)
+    override fun getTimersByType(type: TimerType): Flow<List<Timer>> = timerDao.getTimersByType(type)
     
-    fun getTimerById(id: String): Flow<Timer?> = timerDao.getTimerById(id)
+    override fun getTimerById(id: String): Flow<Timer?> = timerDao.getTimerById(id)
     
-    fun getAllTemplates(): Flow<List<Timer>> = timerDao.getAllTemplates()
+    override fun getAllTemplates(): Flow<List<Timer>> = timerDao.getAllTemplates()
     
-    suspend fun saveTimer(timer: Timer) = timerDao.insertTimer(timer)
+    override suspend fun saveTimer(timer: Timer): Long = timerDao.insertTimer(timer)
     
-    suspend fun updateTimer(timer: Timer) = timerDao.updateTimer(timer)
+    override suspend fun updateTimer(timer: Timer) = timerDao.updateTimer(timer)
     
-    suspend fun deleteTimer(timer: Timer) = timerDao.deleteTimer(timer)
+    override suspend fun deleteTimer(timer: Timer) = timerDao.deleteTimer(timer)
     
-    suspend fun updateTimerStatus(timerId: String, status: TimerStatus) = 
+    override suspend fun updateTimerStatus(timerId: String, status: TimerStatus) = 
         timerDao.updateTimerStatus(timerId, status)
     
-    suspend fun updateElapsedTime(timerId: String, elapsedTimeMillis: Long) = 
+    override suspend fun updateElapsedTime(timerId: String, elapsedTimeMillis: Long) = 
         timerDao.updateElapsedTime(timerId, elapsedTimeMillis)
     
-    suspend fun updateLastUsedAt(timerId: String, lastUsedAt: Date = Date()) = 
+    override suspend fun updateLastUsedAt(timerId: String, lastUsedAt: Date) = 
         timerDao.updateLastUsedAt(timerId, lastUsedAt)
     
-    suspend fun resetTimer(timerId: String) = timerDao.resetTimer(timerId)
+    override suspend fun resetTimer(timerId: String) = timerDao.resetTimer(timerId)
     
-    fun getTimersByStatus(status: TimerStatus): Flow<List<Timer>> = 
+    override fun getTimersByStatus(status: TimerStatus): Flow<List<Timer>> = 
         timerDao.getTimersByStatus(status)
     
-    fun getTimersByCategory(category: String): Flow<List<Timer>> = 
+    override fun getTimersByCategory(category: String): Flow<List<Timer>> = 
         timerDao.getTimersByCategory(category)
     
     // Timer Group operations
-    fun getAllGroups(): Flow<List<TimerGroup>> = timerGroupDao.getAllGroups()
+    override fun getAllGroups(): Flow<List<TimerGroup>> = timerGroupDao.getAllGroups()
     
-    fun getGroupById(id: String): Flow<TimerGroup?> = timerGroupDao.getGroupById(id)
+    override fun getGroupById(id: String): Flow<TimerGroup?> = timerGroupDao.getGroupById(id)
     
-    suspend fun saveGroup(timerGroup: TimerGroup) = timerGroupDao.insertGroup(timerGroup)
+    override suspend fun saveGroup(timerGroup: TimerGroup): Long = timerGroupDao.insertGroup(timerGroup)
     
-    suspend fun updateGroup(timerGroup: TimerGroup) = timerGroupDao.updateGroup(timerGroup)
+    override suspend fun updateGroup(timerGroup: TimerGroup) = timerGroupDao.updateGroup(timerGroup)
     
-    suspend fun deleteGroup(timerGroup: TimerGroup) = timerGroupDao.deleteGroup(timerGroup)
+    override suspend fun deleteGroup(timerGroup: TimerGroup) = timerGroupDao.deleteGroup(timerGroup)
     
-    suspend fun updateGroupLastUsedAt(groupId: String, lastUsedAt: Date = Date()) = 
+    override suspend fun updateGroupLastUsedAt(groupId: String, lastUsedAt: Date) = 
         timerGroupDao.updateLastUsedAt(groupId, lastUsedAt)
     
-    fun getGroupItems(groupId: String): Flow<List<TimerGroupItem>> = 
+    override fun getGroupItems(groupId: String): Flow<List<TimerGroupItem>> = 
         timerGroupDao.getGroupItems(groupId)
     
-    suspend fun saveGroupItem(item: TimerGroupItem) = timerGroupDao.insertGroupItem(item)
+    override suspend fun saveGroupItem(item: TimerGroupItem): Long = timerGroupDao.insertGroupItem(item)
     
-    suspend fun deleteGroupItem(item: TimerGroupItem) = timerGroupDao.deleteGroupItem(item)
+    override suspend fun deleteGroupItem(item: TimerGroupItem) = timerGroupDao.deleteGroupItem(item)
     
-    suspend fun deleteAllGroupItems(groupId: String) = timerGroupDao.deleteAllGroupItems(groupId)
+    override suspend fun deleteAllGroupItems(groupId: String) = timerGroupDao.deleteAllGroupItems(groupId)
     
-    suspend fun deleteItemAndReorder(groupId: String, position: Int) = 
+    override suspend fun deleteItemAndReorder(groupId: String, position: Int) = 
         timerGroupDao.deleteItemAndReorder(groupId, position)
     
     // Timer Lap operations
-    fun getLapsByTimerId(timerId: String): Flow<List<TimerLap>> = 
+    override fun getLapsByTimerId(timerId: String): Flow<List<TimerLap>> = 
         timerLapDao.getLapsByTimerId(timerId)
     
-    suspend fun saveLap(lap: TimerLap) = timerLapDao.insertLap(lap)
+    override suspend fun saveLap(lap: TimerLap) = timerLapDao.insertLap(lap)
     
-    suspend fun deleteLap(lap: TimerLap) = timerLapDao.deleteLap(lap)
+    override suspend fun deleteLap(lap: TimerLap) = timerLapDao.deleteLap(lap)
     
-    suspend fun deleteAllLapsForTimer(timerId: String) = 
+    override suspend fun deleteAllLapsForTimer(timerId: String) = 
         timerLapDao.deleteAllLapsForTimer(timerId)
     
-    suspend fun getLapCount(timerId: String): Int = timerLapDao.getLapCount(timerId)
+    override suspend fun getLapCount(timerId: String): Int = timerLapDao.getLapCount(timerId)
 }

@@ -134,27 +134,27 @@ class CountdownViewModel @Inject constructor(
         }
     }
     
-    fun startCountdown(timerId: String, serviceIntent: Intent) {
+    fun startCountdown(timerId: String, @Suppress("UNUSED_PARAMETER") serviceIntent: Intent) {
         viewModelScope.launch {
             timerRepository.updateTimerStatus(timerId, TimerStatus.RUNNING)
             timerRepository.updateLastUsedAt(timerId)
         }
     }
     
-    fun pauseCountdown(timerId: String, serviceIntent: Intent) {
+    fun pauseCountdown(timerId: String, @Suppress("UNUSED_PARAMETER") serviceIntent: Intent) {
         viewModelScope.launch {
             timerRepository.updateTimerStatus(timerId, TimerStatus.PAUSED)
         }
     }
     
-    fun resumeCountdown(timerId: String, serviceIntent: Intent) {
+    fun resumeCountdown(timerId: String, @Suppress("UNUSED_PARAMETER") serviceIntent: Intent) {
         viewModelScope.launch {
             timerRepository.updateTimerStatus(timerId, TimerStatus.RUNNING)
             timerRepository.updateLastUsedAt(timerId)
         }
     }
     
-    fun stopCountdown(timerId: String, serviceIntent: Intent) {
+    fun stopCountdown(timerId: String, @Suppress("UNUSED_PARAMETER") serviceIntent: Intent) {
         viewModelScope.launch {
             timerRepository.resetTimer(timerId)
         }

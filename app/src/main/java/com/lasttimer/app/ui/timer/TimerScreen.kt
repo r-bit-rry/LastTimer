@@ -39,6 +39,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -256,9 +257,10 @@ fun TimerList(
     onDeleteTimer: (String) -> Unit,
     onSaveAsTemplate: (String) -> Unit
 ) {
-    val timers by remember(timersFlow) {
+    val timersState = remember(timersFlow) {
         mutableStateOf<List<Timer>>(emptyList())
     }
+    var timers by timersState
     
     // Collect timers from the flow
     LaunchedEffect(timersFlow) {
@@ -429,7 +431,7 @@ fun TimerItem(
             
             // Progress indicator
             LinearProgressIndicator(
-                progress = { animatedProgress.value },
+                progress = animatedProgress.value,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)

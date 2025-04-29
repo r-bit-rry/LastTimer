@@ -15,10 +15,10 @@ import java.util.Date
 
 @Dao
 interface TimerDao {
-    @Query("SELECT * FROM timers WHERE isTemplate = 0 ORDER BY lastUsedAt DESC NULLS LAST")
+    @Query("SELECT * FROM timers WHERE isTemplate = 0 ORDER BY CASE WHEN lastUsedAt IS NULL THEN 1 ELSE 0 END, lastUsedAt DESC")
     fun getAllTimers(): Flow<List<Timer>>
     
-    @Query("SELECT * FROM timers WHERE type = :type AND isTemplate = 0 ORDER BY lastUsedAt DESC NULLS LAST")
+    @Query("SELECT * FROM timers WHERE type = :type AND isTemplate = 0 ORDER BY CASE WHEN lastUsedAt IS NULL THEN 1 ELSE 0 END, lastUsedAt DESC")
     fun getTimersByType(type: TimerType): Flow<List<Timer>>
     
     @Query("SELECT * FROM timers WHERE id = :id")

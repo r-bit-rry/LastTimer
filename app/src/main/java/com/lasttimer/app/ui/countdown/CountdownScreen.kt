@@ -275,9 +275,10 @@ fun CountdownList(
     onStopCountdown: (String) -> Unit,
     onDeleteCountdown: (String) -> Unit
 ) {
-    val countdowns by remember(countdownsFlow) {
+    val countdownsState = remember(countdownsFlow) {
         mutableStateOf<List<Timer>>(emptyList())
     }
+    var countdowns by countdownsState
     
     // Collect countdowns from the flow
     LaunchedEffect(countdownsFlow) {

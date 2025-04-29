@@ -19,6 +19,7 @@ import com.lasttimer.app.data.model.TimerStatus
 import com.lasttimer.app.data.model.TimerType
 import com.lasttimer.app.data.repository.TimerRepository
 import com.lasttimer.app.receiver.TimerActionReceiver
+import java.util.Date
 import com.lasttimer.app.ui.MainActivity
 import com.lasttimer.app.util.formatTime
 import dagger.hilt.android.AndroidEntryPoint
@@ -30,7 +31,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import java.util.Date
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -302,7 +302,9 @@ class TimerService : Service() {
         val remaining = duration - timer.elapsedTimeMillis
         
         if (remaining <= 0) {
-            handleTimerCompleted(timer.id)
+            serviceScope.launch {
+                handleTimerCompleted(timer.id)
+            }
             return
         }
         
@@ -360,7 +362,9 @@ class TimerService : Service() {
         
         // If target date is in the past, complete the timer
         if (targetDate.before(now)) {
-            handleTimerCompleted(timer.id)
+            serviceScope.launch {
+                handleTimerCompleted(timer.id)
+            }
             return
         }
         
@@ -495,7 +499,7 @@ class TimerService : Service() {
         val group = timerRepository.getGroupById(groupId).first() ?: return
         
         // Update last used timestamp
-        timerRepository.updateGroupLastUsedAt(groupId)
+        timerRepository.updateGroupLastUsedAt(groupId, Date())
         
         // Get all timers in the group, sorted by position
         val groupItems = timerRepository.getGroupItems(groupId).first()
@@ -524,54 +528,22 @@ class TimerService : Service() {
             // There is a next timer in the sequence
             val nextItem = groupItems[currentPosition + 1]
             
-            // Only auto-start if the group setting allows it
-            if (group.autoStartNext) {
-                activeGroups[nextItem.timerId] = groupId
-                startTimer(nextItem.timerId)
-            }
+            // Start the next timer
+            activeGroups[nextItem.timerId] = groupId
+            startTimer(nextItem.timerId)
         } else if (currentPosition == groupItems.size - 1) {
             // This was the last timer in the group
-            if (group.repeatGroup) {
-                // If the group should repeat, start from the beginning
-                val firstItem = groupItems.first()
-                
-                // Check repeat count if it's not infinite
-                val currentRepeatCycle = group.currentRepeatCycle
-                val repeatCount = group.repeatCount
-                
-                if (repeatCount == null || repeatCount <= 0 || currentRepeatCycle < repeatCount - 1) {
-                    // Update the group's repeat cycle
-                    val updatedGroup = group.copy(
-                        currentRepeatCycle = currentRepeatCycle + 1
-                    )
-                    timerRepository.updateGroup(updatedGroup)
-                    
-                    // Start the first timer again
-                    activeGroups[firstItem.timerId] = groupId
-                    startTimer(firstItem.timerId)
-                } else {
-                    // Reset the repeat cycle
-                    val updatedGroup = group.copy(
-                        currentRepeatCycle = 0
-                    )
-                    timerRepository.updateGroup(updatedGroup)
-                    
-                    // The group has completed all repetitions
-                    // Send some kind of notification or update UI
-                    val notification = createNotification("Timer group ${group.name} completed.")
-                    val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                    notificationManager.notify(NOTIFICATION_ID + 1, notification.build())
-                }
-            } else {
-                // The group has completed without repeating
-                // Send some kind of notification or update UI
-                val notification = createNotification("Timer group ${group.name} completed.")
-                val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                notificationManager.notify(NOTIFICATION_ID + 1, notification.build())
-            }
+            // Start from the beginning if needed
+            val firstItem = groupItems.first()
+            activeGroups[firstItem.timerId] = groupId
+            startTimer(firstItem.timerId)
+            
+            // Send a notification that the group has completed one cycle
+            val notification = createNotification("Timer group ${group.name} cycle completed.")
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.notify(NOTIFICATION_ID + 1, notification.build())
         }
     }
-    
     // Data class for timer state
     data class TimerState(
         val elapsedTime: Long,

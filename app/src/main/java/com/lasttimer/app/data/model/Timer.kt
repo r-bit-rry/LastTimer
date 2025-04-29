@@ -42,17 +42,6 @@ data class Timer(
     val status: TimerStatus = TimerStatus.IDLE
 )
 
-@Entity(tableName = "timer_groups")
-data class TimerGroup(
-    @PrimaryKey
-    val id: String = UUID.randomUUID().toString(),
-    val name: String,
-    val description: String? = null,
-    val createdAt: Date = Date(),
-    val lastUsedAt: Date? = null,
-    val autoStart: Boolean = true
-)
-
 @Entity(tableName = "timer_group_items",
     primaryKeys = ["groupId", "timerId", "position"])
 data class TimerGroupItem(
