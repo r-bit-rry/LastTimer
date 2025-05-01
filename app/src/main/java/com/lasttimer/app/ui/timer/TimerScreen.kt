@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -25,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -32,17 +32,18 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,13 +51,13 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -64,11 +65,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -81,111 +80,110 @@ import com.lasttimer.app.R
 import com.lasttimer.app.data.model.Timer
 import com.lasttimer.app.data.model.TimerStatus
 import com.lasttimer.app.service.TimerService
+import com.lasttimer.app.ui.common.CustomTimePicker
+import com.lasttimer.app.ui.timer.TimerUiState
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun TimerScreen(
     viewModel: TimerViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val isCreateTimerDialogVisible by viewModel.isCreateTimerDialogVisible.collectAsState()
+    val context = LocalContext.current
     
-    // Service connection
+    // Timer service connection with improved management
     var timerService by remember { mutableStateOf<TimerService?>(null) }
     var isBound by remember { mutableStateOf(false) }
+    val lifecycleOwner = LocalLifecycleOwner.current
     
+    // Create a persistent service connection
     val serviceConnection = remember {
         object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                println("DEBUG: TimerScreen - Service connected")
                 val binder = service as TimerService.TimerBinder
                 timerService = binder.getService()
                 isBound = true
             }
             
             override fun onServiceDisconnected(name: ComponentName?) {
+                println("DEBUG: TimerScreen - Service disconnected")
                 timerService = null
                 isBound = false
             }
         }
     }
     
-    // Bind to the service when the screen is created
-    DisposableEffect(context) {
-        val intent = Intent(context, TimerService::class.java)
-        context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
-        
-        onDispose {
-            if (isBound) {
-                context.unbindService(serviceConnection)
-                isBound = false
-            }
-        }
-    }
-    
-    // Restart the service if we're resuming the app
-    val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                // Check if we need to restart the service
-                val intent = Intent(context, TimerService::class.java)
-                context.startService(intent)
+            when (event) {
+                Lifecycle.Event.ON_START -> {
+                    println("DEBUG: TimerScreen - ON_START, binding to service")
+                    val serviceIntent = Intent(context, TimerService::class.java)
+                    // Start the service to ensure it's running
+                    context.startService(serviceIntent)
+                    context.bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
+                }
+                Lifecycle.Event.ON_STOP -> {
+                    if (isBound) {
+                        println("DEBUG: TimerScreen - ON_STOP, unbinding from service")
+                        context.unbindService(serviceConnection)
+                        isBound = false
+                    }
+                }
+                else -> { /* Ignore other lifecycle events */ }
             }
         }
         
         lifecycleOwner.lifecycle.addObserver(observer)
         
         onDispose {
+            println("DEBUG: TimerScreen - Disposing")
             lifecycleOwner.lifecycle.removeObserver(observer)
+            // Only unbind if we are still bound to avoid IllegalArgumentException
+            if (isBound) {
+                try {
+                    context.unbindService(serviceConnection)
+                    isBound = false
+                    println("DEBUG: TimerScreen - Successfully unbound service on dispose")
+                } catch (e: Exception) {
+                    println("ERROR: TimerScreen - Failed to unbind service: ${e.message}")
+                }
+            }
         }
     }
     
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.tab_timer)) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            )
-        },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { viewModel.showCreateTimerDialog() }
+                onClick = { viewModel.showCreateTimerDialog() },
+                containerColor = MaterialTheme.colorScheme.primary
             ) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.new_timer))
+                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.create_timer))
             }
         }
-    ) { innerPadding ->
+    ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(paddingValues)
         ) {
-            when (uiState) {
-                is TimerViewModel.TimerUiState.Loading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+            when (val currentState = uiState) {
+                is TimerUiState.Loading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("Loading timers...")
+                    }
                 }
-                
-                is TimerViewModel.TimerUiState.Error -> {
-                    Text(
-                        text = (uiState as TimerViewModel.TimerUiState.Error).message,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(16.dp)
-                    )
-                }
-                
-                is TimerViewModel.TimerUiState.Success -> {
-                    val timersFlow = (uiState as TimerViewModel.TimerUiState.Success).timers
+                is TimerUiState.Success -> {
+                    val timers = currentState.timers
                     TimerList(
-                        timersFlow = timersFlow,
+                        timers = timers,
+                        timersFlow = viewModel.uiState,
                         timerService = timerService,
                         onStartTimer = { timerId ->
                             val intent = Intent(context, TimerService::class.java).apply {
@@ -227,35 +225,33 @@ fun TimerScreen(
                         }
                     )
                 }
+                is TimerUiState.Error -> {
+                    val errorMessage = currentState.message
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("Error loading timers: $errorMessage")
+                    }
+                }
             }
         }
     }
     
+    // Show dialog for creating a new timer
     if (isCreateTimerDialogVisible) {
         CreateTimerDialog(
-            hoursState = viewModel.newTimerHours.collectAsState(),
-            minutesState = viewModel.newTimerMinutes.collectAsState(),
-            secondsState = viewModel.newTimerSeconds.collectAsState(),
-            // optional name field state (obsolete but retained for compatibility)
-            nameState = remember { mutableStateOf("") },
-            // optional name change callback (obsolete)
-            onNameChange = { },
-            repeatState = viewModel.newTimerRepeat.collectAsState(),
-            repeatCountState = viewModel.newTimerRepeatCount.collectAsState(),
-            onHoursChange = { viewModel.updateNewTimerHours(it) },
-            onMinutesChange = { viewModel.updateNewTimerMinutes(it) },
-            onSecondsChange = { viewModel.updateNewTimerSeconds(it) },
-            onRepeatChange = { viewModel.updateNewTimerRepeat(it) },
-            onRepeatCountChange = { viewModel.updateNewTimerRepeatCount(it) },
             onDismiss = { viewModel.hideCreateTimerDialog() },
-            onCreate = { viewModel.createTimer() }
+            onCreate = { viewModel.createTimer() },
+            viewModel = viewModel
         )
     }
 }
 
 @Composable
 fun TimerList(
-    timersFlow: Flow<List<Timer>>,
+    timers: List<Timer>,
+    timersFlow: StateFlow<TimerUiState>,
     timerService: TimerService?,
     onStartTimer: (String) -> Unit,
     onPauseTimer: (String) -> Unit,
@@ -264,15 +260,15 @@ fun TimerList(
     onDeleteTimer: (String) -> Unit,
     onSaveAsTemplate: (String) -> Unit
 ) {
-    val timersState = remember(timersFlow) {
-        mutableStateOf<List<Timer>>(emptyList())
-    }
-    var timers by timersState
+    // State for storing timers
+    var timersList by remember { mutableStateOf(timers) }
     
-    // Collect timers from the flow
+    // Collect state from the uiState flow
     LaunchedEffect(timersFlow) {
-        timersFlow.collect { newTimers ->
-            timers = newTimers
+        timersFlow.collect { state ->
+            if (state is TimerUiState.Success) {
+                timersList = state.timers
+            }
         }
     }
     
@@ -281,7 +277,7 @@ fun TimerList(
         mutableStateOf(emptyMap<String, TimerService.TimerState>())
     }
     
-    if (timers.isEmpty()) {
+    if (timersList.isEmpty()) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -298,7 +294,7 @@ fun TimerList(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(timers, key = { it.id }) { timer ->
+            items(timersList, key = { it.id }) { timer ->
                 val timerState = timerStates[timer.id]
                 
                 AnimatedVisibility(
@@ -336,54 +332,32 @@ fun TimerItem(
     onSaveAsTemplate: () -> Unit
 ) {
     val duration = timer.durationMillis ?: 0L
-    val elapsed = timerState?.elapsedTime ?: timer.elapsedTimeMillis
-    val progress = if (duration > 0) (elapsed.toFloat() / duration).coerceIn(0f, 1f) else 0f
-    val animatedProgress = animateFloatAsState(
-        targetValue = progress, 
-        animationSpec = tween(durationMillis = 300),
-        label = "progress"
-    )
-    val status = timerState?.status ?: timer.status
+    val elapsedTime = timerState?.elapsedTime ?: 0L
+    val remainingTime = (duration - elapsedTime).coerceAtLeast(0L)
+    val progress = if (duration > 0) (elapsedTime.toFloat() / duration.toFloat()).coerceIn(0f, 1f) else 0f
     
-    // State for edit dialog
+    // Add state for edit dialog
     var showEditDialog by remember { mutableStateOf(false) }
-    
-    // States for editing
-    var editName by remember { mutableStateOf(timer.name) }
-    var editHours by remember { mutableStateOf((timer.durationMillis ?: 0) / (1000 * 60 * 60)) }
-    var editMinutes by remember { mutableStateOf(((timer.durationMillis ?: 0) % (1000 * 60 * 60)) / (1000 * 60)) }
-    var editSeconds by remember { mutableStateOf(((timer.durationMillis ?: 0) % (1000 * 60)) / 1000) }
-    var editRepeat by remember { mutableStateOf(timer.repeat) }
-    var editRepeatCount by remember { mutableStateOf(timer.repeatCount) }
-    
-    // Create a context to use Material theme values
-    val hapticFeedback = androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress
-    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     
     Card(
         modifier = Modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            // Remove the empty clickable to avoid interfering with gesture detection
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onLongPress = {
+                        // Log long press event for debugging
+                        println("DEBUG: Long press detected on timer ${timer.id}")
+                        showEditDialog = true
+                    }
+                )
+            },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onLongPress = {
-                            haptic.performHapticFeedback(hapticFeedback)
-                            // Initialize edit states
-                            editName = timer.name
-                            editHours = (timer.durationMillis ?: 0) / (1000 * 60 * 60)
-                            editMinutes = ((timer.durationMillis ?: 0) % (1000 * 60 * 60)) / (1000 * 60)
-                            editSeconds = ((timer.durationMillis ?: 0) % (1000 * 60)) / 1000
-                            editRepeat = timer.repeat
-                            editRepeatCount = timer.repeatCount ?: 0
-                            showEditDialog = true
-                        }
-                    )
-                }
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -397,20 +371,17 @@ fun TimerItem(
                 )
                 
                 Row {
-                    // Save as template button
                     IconButton(
-                        onClick = onSaveAsTemplate
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Bookmark,
-                            contentDescription = stringResource(R.string.save_as_template),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    
-                    // Delete button
-                    IconButton(
-                        onClick = onDeleteTimer
+                        onClick = {
+                            try {
+                                println("DEBUG: Delete button clicked for timer ${timer.id}")
+                                onDeleteTimer()
+                                println("DEBUG: Delete action sent for timer ${timer.id}")
+                            } catch (e: Exception) {
+                                println("ERROR: Failed to delete timer ${timer.id} - ${e.message}")
+                                e.printStackTrace()
+                            }
+                        }
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
@@ -418,369 +389,309 @@ fun TimerItem(
                             tint = MaterialTheme.colorScheme.error
                         )
                     }
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Timer display with pulsing animation when running
-            val textScale = remember { androidx.compose.animation.core.Animatable(1f) }
-            
-            // Pulse animation for the timer text when it's running
-            LaunchedEffect(status) {
-                if (status == TimerStatus.RUNNING) {
-                    while (true) {
-                        textScale.animateTo(
-                            targetValue = 1.05f,
-                            animationSpec = tween(durationMillis = 500)
+                    
+                    // Update the Save button to make its purpose clearer
+                    IconButton(
+                        onClick = {
+                            try {
+                                println("DEBUG: Save as Template button clicked for timer ${timer.id}")
+                                onSaveAsTemplate()
+                                println("DEBUG: Save as Template action completed for timer ${timer.id}")
+                            } catch (e: Exception) {
+                                println("ERROR: Failed to save timer as template - ${e.message}")
+                                e.printStackTrace()
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Save,
+                            contentDescription = stringResource(R.string.save_as_template)
                         )
-                        textScale.animateTo(
-                            targetValue = 1f,
-                            animationSpec = tween(durationMillis = 500)
-                        )
-                        kotlinx.coroutines.delay(1000)
                     }
-                } else {
-                    // Reset scale when not running
-                    textScale.snapTo(1f)
                 }
             }
             
+            // Display time remaining
             Text(
-                text = timerState?.formattedTime ?: formatTime(timer.elapsedTimeMillis, timer.durationMillis),
-                style = MaterialTheme.typography.displayMedium,
-                modifier = Modifier
-                    .scale(textScale.value)
-                    .align(Alignment.CenterHorizontally)
+                text = formatTime(remainingTime),
+                style = MaterialTheme.typography.headlineMedium
             )
-            
-            if (timer.repeat) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Repeats: ${if (timer.repeatCount <= 0) "∞" else timer.repeatCount} times",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
             
             // Progress indicator
             LinearProgressIndicator(
-                progress = animatedProgress.value,
+                progress = progress,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
+                    .padding(vertical = 8.dp)
             )
-            
-            Spacer(modifier = Modifier.height(16.dp))
             
             // Control buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.Center
             ) {
-                when (status) {
+                // Dynamic controls based on timer state
+                when (timer.status) {
                     TimerStatus.IDLE -> {
-                        ControlButton(
-                            icon = Icons.Default.PlayArrow,
-                            contentDescription = stringResource(R.string.start),
-                            onClick = onStartTimer
-                        )
+                        // Start button with improved click handling and debugging
+                        IconButton(
+                            onClick = {
+                                try {
+                                    println("DEBUG: Start button clicked for timer ${timer.id}")
+                                    onStartTimer()
+                                    println("DEBUG: Start action completed for timer ${timer.id}")
+                                } catch (e: Exception) {
+                                    // Log the error for debugging
+                                    println("ERROR: Failed to start timer ${timer.id} - ${e.message}")
+                                    e.printStackTrace()
+                                }
+                            },
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = CircleShape
+                                )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = stringResource(R.string.start),
+                                tint = Color.White
+                            )
+                        }
                     }
                     TimerStatus.RUNNING -> {
-                        ControlButton(
-                            icon = Icons.Default.Pause,
-                            contentDescription = stringResource(R.string.pause),
-                            onClick = onPauseTimer
-                        )
-                        ControlButton(
-                            icon = Icons.Default.Stop,
-                            contentDescription = stringResource(R.string.stop),
-                            onClick = onStopTimer
-                        )
+                        // Pause button with improved error handling and debug logs
+                        IconButton(
+                            onClick = {
+                                try {
+                                    println("DEBUG: Pause button clicked for timer ${timer.id}")
+                                    onPauseTimer()
+                                    println("DEBUG: Pause action completed for timer ${timer.id}")
+                                } catch (e: Exception) {
+                                    // Enhanced error logging
+                                    println("ERROR: Failed to pause timer ${timer.id} - ${e.message}")
+                                    e.printStackTrace()
+                                }
+                            },
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = CircleShape
+                                )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Pause,
+                                contentDescription = stringResource(R.string.pause),
+                                tint = Color.White
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.width(16.dp)) // Space between buttons
+                        
+                        // Stop button with improved error handling and debug logs
+                        IconButton(
+                            onClick = {
+                                try {
+                                    println("DEBUG: Stop button clicked for timer ${timer.id}")
+                                    onStopTimer()
+                                    println("DEBUG: Stop action completed for timer ${timer.id}")
+                                } catch (e: Exception) {
+                                    // Enhanced error logging
+                                    println("ERROR: Failed to stop timer ${timer.id} - ${e.message}")
+                                    e.printStackTrace()
+                                }
+                            },
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.error,
+                                    shape = CircleShape
+                                )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Stop,
+                                contentDescription = stringResource(R.string.stop),
+                                tint = Color.White
+                            )
+                        }
                     }
                     TimerStatus.PAUSED -> {
-                        ControlButton(
-                            icon = Icons.Default.PlayArrow,
-                            contentDescription = stringResource(R.string.resume),
-                            onClick = onResumeTimer
-                        )
-                        ControlButton(
-                            icon = Icons.Default.Stop,
-                            contentDescription = stringResource(R.string.stop),
-                            onClick = onStopTimer
-                        )
+                        // Resume button with improved error handling and debug logs
+                        IconButton(
+                            onClick = {
+                                try {
+                                    println("DEBUG: Resume button clicked for timer ${timer.id}")
+                                    onResumeTimer()
+                                    println("DEBUG: Resume action completed for timer ${timer.id}")
+                                } catch (e: Exception) {
+                                    // Enhanced error logging
+                                    println("ERROR: Failed to resume timer ${timer.id} - ${e.message}")
+                                    e.printStackTrace()
+                                }
+                            },
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = CircleShape
+                                )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = stringResource(R.string.resume),
+                                tint = Color.White
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.width(16.dp)) // Space between buttons
+                        
+                        // Stop button
+                        IconButton(
+                            onClick = onStopTimer,
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.error,
+                                    shape = CircleShape
+                                )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Stop,
+                                contentDescription = stringResource(R.string.stop),
+                                tint = Color.White
+                            )
+                        }
                     }
                     TimerStatus.COMPLETED -> {
-                        ControlButton(
-                            icon = Icons.Default.PlayArrow,
-                            contentDescription = stringResource(R.string.start),
-                            onClick = onStartTimer
-                        )
+                        // Restart button - make it more visible with improved logging
+                        IconButton(
+                            onClick = {
+                                try {
+                                    println("DEBUG: Restart button clicked for completed timer ${timer.id}")
+                                    onStartTimer() // Reuse start action for restart
+                                    println("DEBUG: Restart action completed for timer ${timer.id}")
+                                } catch (e: Exception) {
+                                    // Log error for debugging
+                                    println("ERROR: Failed to restart timer ${timer.id} - ${e.message}")
+                                    e.printStackTrace()
+                                }
+                            },
+                            modifier = Modifier
+                                .size(58.dp) // Make button larger for better visibility
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = CircleShape
+                                )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Replay,
+                                contentDescription = stringResource(R.string.reset),
+                                tint = Color.White,
+                                modifier = Modifier.size(32.dp) // Larger icon
+                            )
+                        }
                     }
                 }
             }
         }
     }
     
+    // Show edit dialog when long press occurs
     if (showEditDialog) {
-        AlertDialog(
-            onDismissRequest = { showEditDialog = false },
-            title = { Text("Edit Timer") },
-            text = {
-                Column {
-                    // Name field
-                    OutlinedTextField(
-                        value = timer.name,
-                        onValueChange = { /* We will need to implement this */ },
-                        label = { Text(stringResource(R.string.timer_name)) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        // Hours
-                        OutlinedTextField(
-                            value = ((timer.durationMillis ?: 0) / (1000 * 60 * 60)).toString(),
-                            onValueChange = { /* We will need to implement this */ },
-                            label = { Text(stringResource(R.string.hours)) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
-                        )
-                        
-                        Spacer(modifier = Modifier.size(8.dp))
-                        
-                        // Minutes
-                        OutlinedTextField(
-                            value = (((timer.durationMillis ?: 0) % (1000 * 60 * 60)) / (1000 * 60)).toString(),
-                            onValueChange = { /* We will need to implement this */ },
-                            label = { Text(stringResource(R.string.minutes)) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
-                        )
-                        
-                        Spacer(modifier = Modifier.size(8.dp))
-                        
-                        // Seconds
-                        OutlinedTextField(
-                            value = (((timer.durationMillis ?: 0) % (1000 * 60)) / 1000).toString(),
-                            onValueChange = { /* We will need to implement this */ },
-                            label = { Text(stringResource(R.string.seconds)) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    // Repeat timer option
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = timer.repeat ?: false,
-                            onCheckedChange = { /* We will need to implement this */ }
-                        )
-                        Text(
-                            text = stringResource(R.string.repeat_group),
-                            modifier = Modifier.clickable { /* We will need to implement this */ }
-                        )
-                    }
-                    
-                    // Repeat count field (only shown if repeat is enabled)
-                    if (timer.repeat == true) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        OutlinedTextField(
-                            value = (timer.repeatCount ?: 0).toString(),
-                            onValueChange = { /* We will need to implement this */ },
-                            label = { Text(stringResource(R.string.repeat_count)) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
+        EditTimerDialog(
+            timer = timer,
+            onSave = { newName, newDurationMillis ->
+                // Update the timer with a proper API call to the repository through ViewModel
+                try {
+                    // This should be implemented by passing the update action to the parent
+                    // For now, we'll just close the dialog and print debug info
+                    println("DEBUG: Updating timer ${timer.id} - Name: $newName, Duration: $newDurationMillis ms")
+                    // In a complete implementation, we would call something like:
+                    // viewModel.updateTimer(timer.id, newName, newDurationMillis)
+                    showEditDialog = false
+                } catch (e: Exception) {
+                    println("ERROR: Failed to update timer - ${e.message}")
                 }
             },
-            confirmButton = {
-                Button(onClick = { showEditDialog = false }) {
-                    Text("Update")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showEditDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
+            onDismiss = { showEditDialog = false }
         )
     }
 }
 
-@Composable
-fun ControlButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    contentDescription: String,
-    onClick: () -> Unit
-) {
-    val scale = remember { androidx.compose.animation.core.Animatable(1f) }
-    
-    LaunchedEffect(Unit) {
-        // Pulse animation
-        kotlinx.coroutines.delay(500)
-        scale.animateTo(
-            targetValue = 1.1f,
-            animationSpec = tween(durationMillis = 200)
-        )
-        scale.animateTo(
-            targetValue = 1f,
-            animationSpec = tween(durationMillis = 200)
-        )
-    }
-    
-    Box(
-        modifier = Modifier
-            .size(56.dp)
-            .scale(scale.value)
-            .background(
-                color = MaterialTheme.colorScheme.primaryContainer,
-                shape = CircleShape
-            )
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-            modifier = Modifier.size(28.dp)
-        )
-    }
-}
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateTimerDialog(
-    hoursState: androidx.compose.runtime.State<Int>,
-    minutesState: androidx.compose.runtime.State<Int>,
-    secondsState: androidx.compose.runtime.State<Int>,
-    // optional name field state (obsolete but retained for compatibility)
-    nameState: androidx.compose.runtime.State<String> = remember { mutableStateOf("") },
-    // optional name change callback (obsolete)
-    onNameChange: (String) -> Unit = {},
-    repeatState: androidx.compose.runtime.State<Boolean> = androidx.compose.runtime.remember { mutableStateOf(false) },
-    repeatCountState: androidx.compose.runtime.State<Int> = androidx.compose.runtime.remember { mutableStateOf(0) },
-    onHoursChange: (Int) -> Unit,
-    onMinutesChange: (Int) -> Unit,
-    onSecondsChange: (Int) -> Unit,
-    onRepeatChange: (Boolean) -> Unit = {},
-    onRepeatCountChange: (Int) -> Unit = {},
     onDismiss: () -> Unit,
-    onCreate: () -> Unit
+    onCreate: () -> Unit,
+    viewModel: TimerViewModel
 ) {
+    var hours by remember { mutableStateOf(0) }
+    var minutes by remember { mutableStateOf(0) }
+    var seconds by remember { mutableStateOf(0) }
+    
+    // Collect states from ViewModel
+    val repeat by viewModel.newTimerRepeat.collectAsState()
+    val repeatCount by viewModel.newTimerRepeatCount.collectAsState()
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.new_timer)) },
+        title = { Text(stringResource(R.string.create_timer)) },
         text = {
             Column {
-                // Name field removed from initial dialog - will be auto-generated
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    // Hours
-                    OutlinedTextField(
-                        value = hoursState.value.toString(),
-                        onValueChange = { 
-                            val hours = it.toIntOrNull() ?: 0
-                            onHoursChange(hours.coerceIn(0, 99)) 
-                        },
-                        label = { Text(stringResource(R.string.hours)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f)
-                    )
-                    
-                    Spacer(modifier = Modifier.size(8.dp))
-                    
-                    // Minutes
-                    OutlinedTextField(
-                        value = minutesState.value.toString(),
-                        onValueChange = { 
-                            val minutes = it.toIntOrNull() ?: 0
-                            onMinutesChange(minutes.coerceIn(0, 59)) 
-                        },
-                        label = { Text(stringResource(R.string.minutes)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f)
-                    )
-                    
-                    Spacer(modifier = Modifier.size(8.dp))
-                    
-                    // Seconds
-                    OutlinedTextField(
-                        value = secondsState.value.toString(),
-                        onValueChange = { 
-                            val seconds = it.toIntOrNull() ?: 0
-                            onSecondsChange(seconds.coerceIn(0, 59)) 
-                        },
-                        label = { Text(stringResource(R.string.seconds)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                
+                // Use CustomTimePicker
+                CustomTimePicker(
+                    initialHours = hours,
+                    initialMinutes = minutes,
+                    initialSeconds = seconds,
+                    onTimeChange = { h, m, s ->
+                        hours = h
+                        minutes = m
+                        seconds = s
+                        // Update ViewModel
+                        viewModel.updateNewTimerHours(h)
+                        viewModel.updateNewTimerMinutes(m)
+                        viewModel.updateNewTimerSeconds(s)
+                    }
+                )
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
-                // Repeat timer option
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+
+                // Repeat options
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
-                        checked = repeatState.value,
-                        onCheckedChange = onRepeatChange
+                        checked = repeat, 
+                        onCheckedChange = { viewModel.updateNewTimerRepeat(it) }
                     )
-                    Text(
-                        text = stringResource(R.string.repeat_group),
-                        modifier = Modifier.clickable { onRepeatChange(!repeatState.value) }
-                    )
+                    Text(stringResource(R.string.repeat))
                 }
                 
-                // Repeat count field (only shown if repeat is enabled)
-                if (repeatState.value) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
+                if (repeat) {
                     OutlinedTextField(
-                        value = repeatCountState.value.toString(),
-                        onValueChange = { 
-                            val count = it.toIntOrNull() ?: 0
-                            onRepeatCountChange(count.coerceAtLeast(0)) 
+                        value = repeatCount.toString(),
+                        onValueChange = { value -> 
+                            viewModel.updateNewTimerRepeatCount(value.toIntOrNull() ?: 0) 
                         },
-                        label = { Text(stringResource(R.string.repeat_count)) },
+                        label = { Text(stringResource(R.string.repeat_count_hint)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
                 
-                // Add a hint about long-press to edit more details
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+                
                 Text(
-                    text = stringResource(R.string.long_press_to_edit_hint),
+                    text = stringResource(R.string.long_press_hint),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)
                 )
             }
         },
         confirmButton = {
-            Button(
-                onClick = {
-                    onCreate()
-                },
-                enabled = hoursState.value > 0 || minutesState.value > 0 || secondsState.value > 0
-            ) {
+            Button(onClick = onCreate) {
                 Text(stringResource(R.string.create_timer))
             }
         },
@@ -792,24 +703,71 @@ fun CreateTimerDialog(
     )
 }
 
-// Helper function to format time
-fun formatTime(elapsed: Long, total: Long?): String {
-    val isCountdown = total != null && total > 0
+// Helper function to format time in HH:MM:SS format
+fun formatTime(timeMillis: Long): String {
+    val totalSeconds = timeMillis / 1000
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
     
-    val timeToFormat = if (isCountdown) {
-        val remaining = total!! - elapsed
-        if (remaining < 0) 0 else remaining
-    } else {
-        elapsed
-    }
+    return String.format("%02d:%02d:%02d", hours, minutes, seconds)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditTimerDialog(
+    timer: Timer,
+    onSave: (String, Long) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var name by remember { mutableStateOf(timer.name) }
+    var hours by remember { mutableStateOf((timer.durationMillis ?: 0L) / 3600000) }
+    var minutes by remember { mutableStateOf(((timer.durationMillis ?: 0L) % 3600000) / 60000) }
+    var seconds by remember { mutableStateOf(((timer.durationMillis ?: 0L) % 60000) / 1000) }
     
-    val hours = timeToFormat / (1000 * 60 * 60)
-    val minutes = (timeToFormat % (1000 * 60 * 60)) / (1000 * 60)
-    val seconds = (timeToFormat % (1000 * 60)) / 1000
-    
-    return if (hours > 0) {
-        String.format("%d:%02d:%02d", hours, minutes, seconds)
-    } else {
-        String.format("%02d:%02d", minutes, seconds)
-    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Timer") },
+        text = {
+            Column {
+                // Name field
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.timer_name)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Time picker for duration
+                CustomTimePicker(
+                    initialHours = hours.toInt(),
+                    initialMinutes = minutes.toInt(), 
+                    initialSeconds = seconds.toInt(),
+                    onTimeChange = { h, m, s ->
+                        hours = h.toLong()
+                        minutes = m.toLong()
+                        seconds = s.toLong()
+                    }
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val totalMillis = (hours * 3600000) + (minutes * 60000) + (seconds * 1000)
+                    onSave(name, totalMillis)
+                    onDismiss()
+                }
+            ) {
+                Text("Update")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
 }

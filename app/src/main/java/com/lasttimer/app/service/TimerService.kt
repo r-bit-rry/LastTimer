@@ -428,13 +428,30 @@ class TimerService : Service() {
         // Reset the timer
         timerRepository.resetTimer(timerId)
         
-        // Remove from state tracking
-        val currentStates = _timerStates.value.toMutableMap()
-        currentStates.remove(timerId)
-        _timerStates.value = currentStates
+        // Update state to IDLE with 0 elapsed time instead of removing
+        val timer = timerRepository.getTimerById(timerId).first()
+        if (timer != null) {
+            val duration = when (timer.type) {
+                TimerType.COUNTDOWN -> timer.durationMillis
+                TimerType.DATE_COUNTDOWN -> timer.targetDate?.time?.minus(Date().time)
+                TimerType.STOPWATCH -> null
+            }
+            
+            // Update UI state with reset values
+            updateTimerState(
+                timerId,
+                0L, // Reset elapsed time to 0
+                duration, 
+                TimerStatus.IDLE // Set status to IDLE explicitly
+            )
+            
+            println("DEBUG: Timer $timerId stopped and reset to IDLE state")
+        }
     }
     
     private suspend fun handleTimerCompleted(timerId: String) {
+        println("DEBUG: Timer $timerId completed, updating status to COMPLETED")
+        
         // Update timer status in database
         timerRepository.updateTimerStatus(timerId, TimerStatus.COMPLETED)
         
@@ -452,6 +469,8 @@ class TimerService : Service() {
             timer.durationMillis, 
             TimerStatus.COMPLETED
         )
+        
+        println("DEBUG: Timer $timerId UI state updated to COMPLETED with elapsedTime=${timer.durationMillis}")
         
         // Send broadcast for timer completed
         val intent = Intent(this, TimerActionReceiver::class.java).apply {

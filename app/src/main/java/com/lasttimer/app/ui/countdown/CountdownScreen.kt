@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Replay // Import Replay icon for Reset
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.AlertDialog
@@ -80,6 +81,7 @@ import com.lasttimer.app.R
 import com.lasttimer.app.data.model.Timer
 import com.lasttimer.app.data.model.TimerStatus
 import com.lasttimer.app.service.TimerService
+import com.lasttimer.app.ui.common.CustomTimePicker
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import java.text.SimpleDateFormat
@@ -87,6 +89,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CountdownScreen(
     viewModel: CountdownViewModel = hiltViewModel()
@@ -148,15 +151,6 @@ fun CountdownScreen(
     }
     
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.tab_countdown)) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            )
-        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { viewModel.showCreateCountdownDialog() }
@@ -257,9 +251,10 @@ fun CountdownScreen(
     }
     
     if (showTimePicker) {
-        TimePickerDialogWrapper(
+        // Use our custom time picker dialog
+        TimePickerDialogWithCustomPicker(
             initialDate = viewModel.newCountdownDate.collectAsState().value,
-            onTimeSelected = { hour, minute ->
+            onTimeSelected = { hour, minute, _ -> 
                 viewModel.updateNewCountdownTime(hour, minute)
                 viewModel.setShowTimePicker(false)
             },
@@ -337,7 +332,7 @@ fun CountdownItem(
     onStartCountdown: () -> Unit,
     onPauseCountdown: () -> Unit,
     onResumeCountdown: () -> Unit,
-    onStopCountdown: () -> Unit,
+    onStopCountdown: () -> Unit, // This will now act as Reset for completed timers
     onDeleteCountdown: () -> Unit
 ) {
     val targetDate = countdown.targetDate ?: Date()
@@ -352,10 +347,13 @@ fun CountdownItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = { }) // Empty onClick to enable ripple effect
+            // Remove the empty clickable to fix gesture detection issues
             .pointerInput(Unit) {
                 detectTapGestures(
-                    onLongPress = { showEditDialog = true }
+                    onLongPress = { 
+                        println("DEBUG: Long press detected on countdown")
+                        showEditDialog = true 
+                    }
                 )
             },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -411,76 +409,88 @@ fun CountdownItem(
             Spacer(modifier = Modifier.height(16.dp))
             
             // Control buttons
-            if (!isExpired) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly, // Improved arrangement
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (!isExpired) { // Only show controls if not expired
                     when (countdown.status) {
                         TimerStatus.IDLE -> {
-                            ControlButton(
-                                icon = Icons.Default.PlayArrow,
-                                contentDescription = stringResource(R.string.start),
-                                onClick = onStartCountdown
-                            )
+                            // Use standard Button for better visibility
+                            Button(onClick = onStartCountdown) {
+                                Icon(Icons.Default.PlayArrow, contentDescription = stringResource(R.string.start))
+                                Spacer(Modifier.size(4.dp)) // Add space between icon and text
+                                Text(stringResource(R.string.start))
+                            }
                         }
                         TimerStatus.RUNNING -> {
-                            ControlButton(
-                                icon = Icons.Default.Pause,
-                                contentDescription = stringResource(R.string.pause),
-                                onClick = onPauseCountdown
-                            )
-                            ControlButton(
-                                icon = Icons.Default.Stop,
-                                contentDescription = stringResource(R.string.stop),
-                                onClick = onStopCountdown
-                            )
+                            Button(onClick = onPauseCountdown) {
+                                Icon(Icons.Default.Pause, contentDescription = stringResource(R.string.pause))
+                                Spacer(Modifier.size(4.dp))
+                                Text(stringResource(R.string.pause))
+                            }
+                            // Use TextButton for secondary actions like Stop
+                            TextButton(onClick = onStopCountdown) {
+                                Icon(Icons.Default.Stop, contentDescription = stringResource(R.string.stop))
+                                Spacer(Modifier.size(4.dp))
+                                Text(stringResource(R.string.stop))
+                            }
                         }
                         TimerStatus.PAUSED -> {
-                            ControlButton(
-                                icon = Icons.Default.PlayArrow,
-                                contentDescription = stringResource(R.string.resume),
-                                onClick = onResumeCountdown
-                            )
-                            ControlButton(
-                                icon = Icons.Default.Stop,
-                                contentDescription = stringResource(R.string.stop),
-                                onClick = onStopCountdown
-                            )
+                            Button(onClick = onResumeCountdown) {
+                                Icon(Icons.Default.PlayArrow, contentDescription = stringResource(R.string.resume))
+                                Spacer(Modifier.size(4.dp))
+                                Text(stringResource(R.string.resume))
+                            }
+                            TextButton(onClick = onStopCountdown) {
+                                Icon(Icons.Default.Stop, contentDescription = stringResource(R.string.stop))
+                                Spacer(Modifier.size(4.dp))
+                                Text(stringResource(R.string.stop))
+                            }
                         }
                         TimerStatus.COMPLETED -> {
-                            ControlButton(
-                                icon = Icons.Default.PlayArrow,
-                                contentDescription = stringResource(R.string.start),
-                                onClick = onStartCountdown
-                            )
+                            // Show Reset button when completed
+                            Button(onClick = onStopCountdown) { // Reuse onStop for reset logic
+                                Icon(Icons.Default.Replay, contentDescription = stringResource(R.string.reset))
+                                Spacer(Modifier.size(4.dp))
+                                Text(stringResource(R.string.reset))
+                            }
                         }
                     }
+                } else {
+                    // Optionally show a message or different control for expired timers
+                    Text(
+                        text = stringResource(R.string.countdown_expired_message),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         }
     }
     
     if (showEditDialog) {
+        // Implementation note: This dialog needs to be enhanced with full
+        // edit capabilities connected to the ViewModel in a future update
         AlertDialog(
             onDismissRequest = { showEditDialog = false },
             title = { Text("Edit Date Countdown") },
-            containerColor = MaterialTheme.colorScheme.surface,
             text = {
                 Column {
                     // Name field
                     OutlinedTextField(
                         value = countdown.name,
-                        onValueChange = { /* We will need to implement this */ },
+                        onValueChange = { /* Will be implemented later */ },
                         label = { Text(stringResource(R.string.timer_name)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     
-                    // Date and time fields
+                    // Date and time fields 
                     Button(
-                        onClick = { /* We will need to implement this */ },
+                        onClick = { /* Will be implemented later */ },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(dateFormat.format(targetDate))
@@ -497,31 +507,6 @@ fun CountdownItem(
                     Text(stringResource(R.string.cancel))
                 }
             }
-        )
-    }
-}
-
-@Composable
-fun ControlButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    contentDescription: String,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .size(56.dp)
-            .background(
-                color = MaterialTheme.colorScheme.primaryContainer,
-                shape = CircleShape
-            )
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-            modifier = Modifier.size(28.dp)
         )
     }
 }
@@ -672,11 +657,10 @@ fun TimePickerDialogWrapper(
     val calendar = Calendar.getInstance()
     calendar.time = initialDate
     
-    val timePickerState = rememberTimePickerState(
-        initialHour = calendar.get(Calendar.HOUR_OF_DAY),
-        initialMinute = calendar.get(Calendar.MINUTE),
-        is24Hour = false
-    )
+    // Use our custom time picker instead of the standard one
+    var selectedHour by remember { mutableStateOf(calendar.get(Calendar.HOUR_OF_DAY)) }
+    var selectedMinute by remember { mutableStateOf(calendar.get(Calendar.MINUTE)) }
+    var selectedSecond by remember { mutableStateOf(0) } // Default seconds to 0
     
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -686,16 +670,205 @@ fun TimePickerDialogWrapper(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                TimePicker(
-                    state = timePickerState,
-                    colors = TimePickerDefaults.colors()
+                // Use our custom time picker
+                CustomTimePicker(
+                    initialHours = selectedHour,
+                    initialMinutes = selectedMinute,
+                    initialSeconds = selectedSecond,
+                    onTimeChange = { hours, minutes, seconds ->
+                        selectedHour = hours
+                        selectedMinute = minutes
+                        selectedSecond = seconds
+                    }
                 )
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
-                    onTimeSelected(timePickerState.hour, timePickerState.minute)
+                    onTimeSelected(selectedHour, selectedMinute)
+                    // Note: We're ignoring seconds since the current implementation only uses hour and minute
+                }
+            ) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+// Also update the EditDialog to use CustomTimePicker
+@Composable
+fun EditCountdownDialog(
+    countdown: Timer,
+    onSave: (String, Date) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var name by remember { mutableStateOf(countdown.name) }
+    var selectedDate by remember { mutableStateOf(countdown.targetDate ?: Date()) }
+    var showDatePickerDialog by remember { mutableStateOf(false) }
+    var showTimePickerDialog by remember { mutableStateOf(false) }
+    
+    val dateFormat = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
+    val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
+    
+    // We'll use calendar instances to manipulate dates
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Date Countdown") },
+        text = {
+            Column {
+                // Name field
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.timer_name)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Date picker button
+                OutlinedTextField(
+                    value = dateFormat.format(selectedDate),
+                    onValueChange = { /* Read-only */ },
+                    label = { Text(stringResource(R.string.select_date)) },
+                    readOnly = true,
+                    trailingIcon = {
+                        IconButton(onClick = { showDatePickerDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.CalendarMonth,
+                                contentDescription = "Select date"
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Time picker - display current time
+                OutlinedTextField(
+                    value = timeFormat.format(selectedDate),
+                    onValueChange = { /* Read-only */ },
+                    label = { Text(stringResource(R.string.select_time)) },
+                    readOnly = true,
+                    trailingIcon = {
+                        IconButton(onClick = { showTimePickerDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Schedule,
+                                contentDescription = "Select time"
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onSave(name, selectedDate)
+                    onDismiss()
+                }
+            ) {
+                Text("Update")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+    
+    // Date picker dialog
+    if (showDatePickerDialog) {
+        DatePickerDialogWrapper(
+            initialDate = selectedDate,
+            onDateSelected = { 
+                // Preserve time when updating date
+                val oldCalendar = Calendar.getInstance().apply { time = selectedDate }
+                val newCalendar = Calendar.getInstance().apply { time = it }
+                
+                newCalendar.set(Calendar.HOUR_OF_DAY, oldCalendar.get(Calendar.HOUR_OF_DAY))
+                newCalendar.set(Calendar.MINUTE, oldCalendar.get(Calendar.MINUTE))
+                newCalendar.set(Calendar.SECOND, oldCalendar.get(Calendar.SECOND))
+                
+                selectedDate = newCalendar.time
+                showDatePickerDialog = false
+            },
+            onDismiss = { showDatePickerDialog = false }
+        )
+    }
+    
+    // Time picker dialog
+    if (showTimePickerDialog) {
+        // Use our CustomTimePicker
+        TimePickerDialogWithCustomPicker(
+            initialDate = selectedDate,
+            onTimeSelected = { hour, minute, second ->
+                // Update time while preserving date
+                val newCalendar = Calendar.getInstance()
+                newCalendar.time = selectedDate
+                
+                newCalendar.set(Calendar.HOUR_OF_DAY, hour)
+                newCalendar.set(Calendar.MINUTE, minute)
+                newCalendar.set(Calendar.SECOND, second)
+                
+                selectedDate = newCalendar.time
+                showTimePickerDialog = false
+            },
+            onDismiss = { showTimePickerDialog = false }
+        )
+    }
+}
+
+// A dialog wrapper that uses our CustomTimePicker
+@Composable
+fun TimePickerDialogWithCustomPicker(
+    initialDate: Date,
+    onTimeSelected: (Int, Int, Int) -> Unit, // Hour, minute, second
+    onDismiss: () -> Unit
+) {
+    val calendar = Calendar.getInstance()
+    calendar.time = initialDate
+    
+    // Initialize with current time values
+    var selectedHour by remember { mutableStateOf(calendar.get(Calendar.HOUR_OF_DAY)) }
+    var selectedMinute by remember { mutableStateOf(calendar.get(Calendar.MINUTE)) }
+    var selectedSecond by remember { mutableStateOf(calendar.get(Calendar.SECOND)) }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select Time") },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Use our CustomTimePicker
+                CustomTimePicker(
+                    initialHours = selectedHour,
+                    initialMinutes = selectedMinute,
+                    initialSeconds = selectedSecond,
+                    onTimeChange = { hours, minutes, seconds ->
+                        selectedHour = hours
+                        selectedMinute = minutes
+                        selectedSecond = seconds
+                    }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onTimeSelected(selectedHour, selectedMinute, selectedSecond)
                 }
             ) {
                 Text("OK")

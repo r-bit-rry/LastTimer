@@ -19,6 +19,13 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 
+// UI state for the Timer screen
+sealed class TimerUiState {
+    object Loading : TimerUiState()
+    data class Success(val timers: List<Timer>) : TimerUiState()
+    data class Error(val message: String) : TimerUiState()
+}
+
 @HiltViewModel
 class TimerViewModel @Inject constructor(
     private val timerRepository: ITimerRepository
@@ -55,7 +62,8 @@ class TimerViewModel @Inject constructor(
     fun loadTimers() {
         viewModelScope.launch {
             try {
-                _uiState.value = TimerUiState.Success(timerRepository.getTimersByType(TimerType.COUNTDOWN))
+                val timers = timerRepository.getTimersByType(TimerType.COUNTDOWN).first()
+                _uiState.value = TimerUiState.Success(timers)
             } catch (e: Exception) {
                 _uiState.value = TimerUiState.Error(e.message ?: "Unknown error")
             }
@@ -144,23 +152,45 @@ class TimerViewModel @Inject constructor(
         )
         
         viewModelScope.launch {
-            timerRepository.saveTimer(timer)
-            hideCreateTimerDialog()
+            try {
+                // Save the timer
+                timerRepository.saveTimer(timer)
+                // Hide the dialog 
+                hideCreateTimerDialog()
+                // Reload timers to update UI
+                loadTimers()
+                // Log for debugging
+                println("DEBUG: Timer created and saved successfully with ID: ${timer.id}")
+            } catch (e: Exception) {
+                println("ERROR: Failed to save timer - ${e.message}")
+                _uiState.value = TimerUiState.Error("Failed to save timer: ${e.message}")
+            }
         }
     }
     
     fun startTimer(timerId: String, @Suppress("UNUSED_PARAMETER") serviceIntent: Intent) {
         viewModelScope.launch {
-            // Get the current timer status first
-            timerRepository.getTimerById(timerId).first()?.let { timer ->
-                // If the timer is in COMPLETED status, reset it first
-                if (timer.status == TimerStatus.COMPLETED) {
-                    timerRepository.resetTimer(timerId)
+            try {
+                // Get the current timer status first
+                timerRepository.getTimerById(timerId).first()?.let { timer ->
+                    println("DEBUG: Starting timer ${timer.id} with status ${timer.status}")
+                    
+                    // If the timer is in COMPLETED status, reset it first
+                    if (timer.status == TimerStatus.COMPLETED) {
+                        println("DEBUG: Resetting completed timer before starting")
+                        timerRepository.resetTimer(timerId)
+                        
+                        // Force reload the timers to update UI
+                        loadTimers()
+                    }
+                    
+                    // Now update to RUNNING status
+                    timerRepository.updateTimerStatus(timerId, TimerStatus.RUNNING)
+                    timerRepository.updateLastUsedAt(timerId)
                 }
-                
-                // Now update to RUNNING status
-                timerRepository.updateTimerStatus(timerId, TimerStatus.RUNNING)
-                timerRepository.updateLastUsedAt(timerId)
+            } catch (e: Exception) {
+                println("ERROR: Failed to start timer $timerId - ${e.message}")
+                e.printStackTrace()
             }
         }
     }
@@ -180,43 +210,58 @@ class TimerViewModel @Inject constructor(
     
     fun stopTimer(timerId: String, @Suppress("UNUSED_PARAMETER") serviceIntent: Intent) {
         viewModelScope.launch {
-            timerRepository.resetTimer(timerId)
+            try {
+                println("DEBUG: Stopping timer $timerId")
+                timerRepository.resetTimer(timerId)
+                
+                // Force reload the timers list to update UI state
+                loadTimers()
+            } catch (e: Exception) {
+                println("ERROR: Failed to stop timer $timerId - ${e.message}")
+                e.printStackTrace()
+            }
         }
     }
     
     fun deleteTimer(timerId: String) {
         viewModelScope.launch {
-            timerRepository.getTimerById(timerId).collect { timer ->
+            try {
+                println("DEBUG: Deleting timer $timerId")
+                
+                // Use first() instead of collect to avoid infinite loop
+                val timer = timerRepository.getTimerById(timerId).first()
                 timer?.let {
                     timerRepository.deleteTimer(it)
-                }
+                    println("DEBUG: Timer $timerId deleted successfully")
+                    
+                    // Force refresh the UI
+                    loadTimers()
+                } ?: println("ERROR: Could not find timer $timerId to delete")
+            } catch (e: Exception) {
+                println("ERROR: Failed to delete timer $timerId - ${e.message}")
+                e.printStackTrace()
             }
         }
     }
     
     fun saveAsTemplate(timerId: String) {
         viewModelScope.launch {
-            timerRepository.getTimerById(timerId).collect { timer ->
-                timer?.let {
-                    // Create a copy of the timer as a template
-                    val template = it.copy(
-                        id = UUID.randomUUID().toString(),
-                        name = "${it.name} (Template)",
-                        isTemplate = true,
-                        status = TimerStatus.IDLE,
-                        elapsedTimeMillis = 0,
-                        createdAt = Date(),
-                        lastUsedAt = null
-                    )
-                    timerRepository.saveTimer(template)
-                }
+            // Use first() instead of collect() to prevent multiple emissions
+            // causing infinite template creation.
+            timerRepository.getTimerById(timerId).first()?.let { timer ->
+                // Create a copy of the timer as a template
+                val template = timer.copy(
+                    id = UUID.randomUUID().toString(),
+                    name = "${timer.name} (Template)", // Ensure template name is distinct
+                    isTemplate = true,
+                    status = TimerStatus.IDLE, // Reset status
+                    elapsedTimeMillis = 0, // Reset elapsed time
+                    createdAt = Date(), // Set new creation date for template
+                    lastUsedAt = null // Templates haven't been 'used'
+                )
+                timerRepository.saveTimer(template)
+                // Optionally, add user feedback here (e.g., show a Snackbar)
             }
         }
-    }
-    
-    sealed class TimerUiState {
-        data object Loading : TimerUiState()
-        data class Success(val timers: Flow<List<Timer>>) : TimerUiState()
-        data class Error(val message: String) : TimerUiState()
     }
 }

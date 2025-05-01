@@ -239,7 +239,7 @@ fun DisplaySettings(viewModel: SettingsViewModel) {
                     contentDescription = null
                 )
                 Text(
-                    text = stringResource(R.string.settings),
+                    text = "Display Options",
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(start = 16.dp)
                 )

@@ -131,13 +131,22 @@ class StopwatchViewModel @Inject constructor(
     
     fun resetStopwatch(timerId: String, @Suppress("UNUSED_PARAMETER") serviceIntent: Intent) {
         viewModelScope.launch {
-            timerRepository.resetTimer(timerId)
-            timerRepository.deleteAllLapsForTimer(timerId)
-            _stopwatchLaps.value = emptyList()
-            
-            // If this was the active stopwatch, clear it
-            if (_activeStopwatch.value?.id == timerId) {
-                _activeStopwatch.value = null
+            try {
+                println("DEBUG: Resetting stopwatch $timerId")
+                timerRepository.resetTimer(timerId)
+                timerRepository.deleteAllLapsForTimer(timerId)
+                _stopwatchLaps.value = emptyList()
+                
+                // If this was the active stopwatch, clear it
+                if (_activeStopwatch.value?.id == timerId) {
+                    _activeStopwatch.value = null
+                }
+                
+                // Force refresh of stopwatches list to update UI
+                _uiState.value = StopwatchUiState.Success(timerRepository.getTimersByType(TimerType.STOPWATCH))
+            } catch (e: Exception) {
+                println("ERROR: Failed to reset stopwatch $timerId - ${e.message}")
+                e.printStackTrace()
             }
         }
     }
@@ -162,16 +171,28 @@ class StopwatchViewModel @Inject constructor(
     
     fun deleteStopwatch(timerId: String) {
         viewModelScope.launch {
-            val stopwatch = timerRepository.getTimerById(timerId).first()
-            
-            stopwatch?.let {
-                timerRepository.deleteTimer(it)
+            try {
+                println("DEBUG: Deleting stopwatch $timerId")
                 
-                // If this was the active stopwatch, clear it
-                if (_activeStopwatch.value?.id == timerId) {
-                    _activeStopwatch.value = null
-                    _stopwatchLaps.value = emptyList()
-                }
+                val stopwatch = timerRepository.getTimerById(timerId).first()
+                
+                stopwatch?.let {
+                    timerRepository.deleteTimer(it)
+                    println("DEBUG: Stopwatch $timerId deleted successfully")
+                    
+                    // If this was the active stopwatch, clear it
+                    if (_activeStopwatch.value?.id == timerId) {
+                        _activeStopwatch.value = null
+                        _stopwatchLaps.value = emptyList()
+                    }
+                    
+                    // Refresh the UI after deletion
+                    _uiState.value = StopwatchUiState.Success(timerRepository.getTimersByType(TimerType.STOPWATCH))
+                } ?: println("ERROR: Could not find stopwatch $timerId to delete")
+            } catch (e: Exception) {
+                println("ERROR: Failed to delete stopwatch $timerId - ${e.message}")
+                e.printStackTrace()
+                _uiState.value = StopwatchUiState.Error("Failed to delete stopwatch: ${e.message}")
             }
         }
     }

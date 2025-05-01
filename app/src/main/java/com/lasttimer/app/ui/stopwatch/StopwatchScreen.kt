@@ -8,6 +8,7 @@ import android.os.IBinder
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -28,6 +30,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -136,15 +139,7 @@ fun StopwatchScreen(
     }
     
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.tab_stopwatch)) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            )
-        },
+        // topBar removed as MainScreen provides it
         floatingActionButton = {
             if (activeStopwatch == null) {
                 FloatingActionButton(
@@ -247,6 +242,33 @@ fun StopwatchScreen(
                                 context.startService(intent)
                                 viewModel.startStopwatch(stopwatchId, intent)
                             },
+                            onPauseStopwatch = { stopwatchId ->
+                                val intent = Intent(context, TimerService::class.java).apply {
+                                    action = TimerService.ACTION_PAUSE_TIMER
+                                    putExtra(TimerService.EXTRA_TIMER_ID, stopwatchId)
+                                }
+                                context.startService(intent)
+                                viewModel.pauseStopwatch(stopwatchId, intent)
+                            },
+                            onResumeStopwatch = { stopwatchId ->
+                                val intent = Intent(context, TimerService::class.java).apply {
+                                    action = TimerService.ACTION_RESUME_TIMER
+                                    putExtra(TimerService.EXTRA_TIMER_ID, stopwatchId)
+                                }
+                                context.startService(intent)
+                                viewModel.resumeStopwatch(stopwatchId, intent)
+                            },
+                            onResetStopwatch = { stopwatchId ->
+                                val intent = Intent(context, TimerService::class.java).apply {
+                                    action = TimerService.ACTION_STOP_TIMER
+                                    putExtra(TimerService.EXTRA_TIMER_ID, stopwatchId)
+                                }
+                                context.startService(intent)
+                                viewModel.resetStopwatch(stopwatchId, intent)
+                            },
+                            onAddLap = { stopwatchId ->
+                                viewModel.addLap(stopwatchId)
+                            },
                             onDeleteStopwatch = { stopwatchId ->
                                 viewModel.deleteStopwatch(stopwatchId)
                             }
@@ -270,10 +292,12 @@ fun StopwatchScreen(
 @Composable
 fun StopwatchList(
     stopwatchesFlow: Flow<List<Timer>>,
-    // timerService not used but kept for future use or interface consistency
-    @Suppress("UNUSED_PARAMETER") 
     timerService: TimerService?,
     onStartStopwatch: (String) -> Unit,
+    onPauseStopwatch: (String) -> Unit,
+    onResumeStopwatch: (String) -> Unit,
+    onResetStopwatch: (String) -> Unit,
+    onAddLap: (String) -> Unit,
     onDeleteStopwatch: (String) -> Unit
 ) {
     val stopwatchesState = remember(stopwatchesFlow) {
@@ -286,6 +310,11 @@ fun StopwatchList(
         stopwatchesFlow.collect { newStopwatches ->
             stopwatches = newStopwatches
         }
+    }
+    
+    // Collect timer states from the service
+    val timerStates by timerService?.timerStates?.collectAsState(emptyMap()) ?: remember {
+        mutableStateOf(emptyMap<String, TimerService.TimerState>())
     }
     
     if (stopwatches.isEmpty()) {
@@ -307,9 +336,16 @@ fun StopwatchList(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(stopwatches, key = { it.id }) { stopwatch ->
+                val timerState = timerStates[stopwatch.id]
+                
                 StopwatchItem(
                     stopwatch = stopwatch,
+                    timerState = timerState,
                     onStartStopwatch = { onStartStopwatch(stopwatch.id) },
+                    onPauseStopwatch = { onPauseStopwatch(stopwatch.id) },
+                    onResumeStopwatch = { onResumeStopwatch(stopwatch.id) },
+                    onResetStopwatch = { onResetStopwatch(stopwatch.id) },
+                    onAddLap = { onAddLap(stopwatch.id) },
                     onDeleteStopwatch = { onDeleteStopwatch(stopwatch.id) }
                 )
             }
@@ -320,7 +356,12 @@ fun StopwatchList(
 @Composable
 fun StopwatchItem(
     stopwatch: Timer,
+    timerState: TimerService.TimerState?,
     onStartStopwatch: () -> Unit,
+    onPauseStopwatch: () -> Unit,
+    onResumeStopwatch: () -> Unit,
+    onResetStopwatch: () -> Unit,
+    onAddLap: () -> Unit,
     onDeleteStopwatch: () -> Unit
 ) {
     // State for edit dialog
@@ -329,10 +370,13 @@ fun StopwatchItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = { }) // Empty onClick to enable ripple effect
+            // Remove the empty clickable to fix gesture detection issues
             .pointerInput(Unit) {
                 detectTapGestures(
-                    onLongPress = { showEditDialog = true }
+                    onLongPress = {
+                        println("DEBUG: Long press detected on stopwatch ${stopwatch.id}")
+                        showEditDialog = true
+                    }
                 )
             },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -354,41 +398,165 @@ fun StopwatchItem(
                 )
                 
                 IconButton(
-                    onClick = onDeleteStopwatch
+                    onClick = {
+                        try {
+                            println("DEBUG: Delete button clicked for stopwatch ${stopwatch.id}")
+                            onDeleteStopwatch()
+                            println("DEBUG: Delete action sent for stopwatch ${stopwatch.id}")
+                        } catch (e: Exception) {
+                            println("ERROR: Failed to delete stopwatch ${stopwatch.id} - ${e.message}")
+                            e.printStackTrace()
+                        }
+                    }
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = stringResource(R.string.delete)
+                        contentDescription = stringResource(R.string.delete),
+                        tint = MaterialTheme.colorScheme.error
                     )
                 }
             }
             
             Spacer(modifier = Modifier.height(16.dp))
             
+            // Display time - use timerState if available, otherwise use stopwatch's elapsed time
+            Text(
+                text = timerState?.formattedTime ?: formatTimeWithTenths(stopwatch.elapsedTimeMillis),
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Control buttons with appropriate states
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                Text(
-                    text = "00:00.0",
-                    style = MaterialTheme.typography.titleLarge
-                )
-                
-                IconButton(
-                    onClick = onStartStopwatch,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = CircleShape
-                        )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = stringResource(R.string.start),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+                when (stopwatch.status) {
+                    TimerStatus.IDLE -> {
+                        // Start button
+                        IconButton(
+                            onClick = {
+                                println("DEBUG: Start button clicked for stopwatch ${stopwatch.id}")
+                                onStartStopwatch()
+                            },
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    shape = CircleShape
+                                )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = stringResource(R.string.start),
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                    TimerStatus.RUNNING -> {
+                        // Lap button
+                        IconButton(
+                            onClick = {
+                                println("DEBUG: Lap button clicked for stopwatch ${stopwatch.id}")
+                                onAddLap()
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Flag,
+                                contentDescription = "Lap"
+                            )
+                        }
+                        
+                        // Pause button
+                        IconButton(
+                            onClick = {
+                                println("DEBUG: Pause button clicked for stopwatch ${stopwatch.id}")
+                                onPauseStopwatch()
+                            },
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = CircleShape
+                                )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Pause,
+                                contentDescription = stringResource(R.string.pause),
+                                tint = Color.White
+                            )
+                        }
+                        
+                        // Stop/Reset button
+                        IconButton(
+                            onClick = {
+                                println("DEBUG: Reset button clicked for stopwatch ${stopwatch.id}")
+                                onResetStopwatch()
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Stop,
+                                contentDescription = stringResource(R.string.stop)
+                            )
+                        }
+                    }
+                    TimerStatus.PAUSED -> {
+                        // Resume button
+                        IconButton(
+                            onClick = {
+                                println("DEBUG: Resume button clicked for stopwatch ${stopwatch.id}")
+                                onResumeStopwatch()
+                            },
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = CircleShape
+                                )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = stringResource(R.string.resume),
+                                tint = Color.White
+                            )
+                        }
+                        
+                        // Stop/Reset button
+                        IconButton(
+                            onClick = {
+                                println("DEBUG: Reset button clicked for stopwatch ${stopwatch.id}")
+                                onResetStopwatch()
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Stop,
+                                contentDescription = stringResource(R.string.stop)
+                            )
+                        }
+                    }
+                    TimerStatus.COMPLETED -> {
+                        // Reset button
+                        IconButton(
+                            onClick = {
+                                println("DEBUG: Reset button clicked for stopwatch ${stopwatch.id}")
+                                onResetStopwatch()
+                            },
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = CircleShape
+                                )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Replay,
+                                contentDescription = stringResource(R.string.reset),
+                                tint = Color.White
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -403,7 +571,7 @@ fun StopwatchItem(
                     // Name field
                     OutlinedTextField(
                         value = stopwatch.name,
-                        onValueChange = { /* We will need to implement this */ },
+                        onValueChange = { /* This will be implemented later */ },
                         label = { Text(stringResource(R.string.timer_name)) },
                         modifier = Modifier.fillMaxWidth()
                     )

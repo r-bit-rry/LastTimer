@@ -65,7 +65,7 @@ class TimerViewModelTest {
         
         // Then
         val currentState = viewModel.uiState.value
-        assert(currentState is TimerViewModel.TimerUiState.Success) {
+        assert(currentState is TimerUiState.Success) {
             "Expected Success state but got ${currentState::class.simpleName}"
         }
     }

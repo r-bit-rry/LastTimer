@@ -31,13 +31,16 @@
     <string name="enter_timer_name">Enter timer name</string>
     <string name="create_timer">Create Timer</string>
     <string name="timer_created">Timer created</string>
-    <string name="long_press_to_edit_hint">Tip: Long-press on a timer to edit its details</string>
+    <string name="long_press_hint">Tip: Long-press on a timer to edit its details</string>
+    <string name="repeat_count_hint">Repetitions (0 for infinite)</string>
+    <string name="repeat">Repeat</string>
     
     <!-- Countdown -->
     <string name="select_date">Select Date</string>
     <string name="select_time">Select Time</string>
     <string name="countdown_to">Countdown to:</string>
     <string name="create_countdown">Create Countdown</string>
+    <string name="countdown_expired_message">This countdown has expired</string>
     
     <!-- Cascading Timers -->
     <string name="add_timer">Add Timer</string>

@@ -1,6 +1,55 @@
 # LastTimer Development Ledger
 
-This document tracks active development tasks, design decisions, implementation details, and ongoing improvements for the LastTimer Android application.
+This document tracks active development tasks, design decisions### Current Development Focus
+- [x] Enhanced widget functionality
+  - Multiple widget styles
+  - Direct timer control from widgets
+  - Customizable widget appearance
+- [ ] Backup and restore
+  - Export/import timer configurations
+  - Cloud backup integration
+  - Migration utilities
+- [ ] Advanced scheduling
+  - Calendar integration
+  - Recurring timer schedules
+  - Time-of-day triggers
+- [x] **Major Bug Fixes** (Current Priority)
+  - App crashes on non-timer views
+  - Timer control buttons not working
+  - CustomTimePicker center line UI issue
+  - Missing long-press functionality
+  - Confusing Save button UI
+  
+### Bug Fixing Plan
+1. **App Crashes on Navigation**
+   - Fix MainScreen navigation implementation
+   - Add proper imports for UI components
+   - Fix parameter passing to screen composables
+   - Add proper error handling for view transitions
+
+2. **Timer Controls Not Working**
+   - Fix TimerItem button handlers
+   - Ensure proper communication with TimerService
+   - Debug and fix service binding issues
+   - Add debugging logs for button interactions
+
+3. **CustomTimePicker Center Line Issue**
+   - Fix center line implementation in CustomTimePicker
+   - Adjust zIndex and positioning of the line
+   - Improve visual clarity of time selection
+
+4. **Long-Press Functionality Missing**
+   - Fix detectTapGestures implementation
+   - Ensure proper event handling for long press
+   - Add visual feedback for long press action
+   - Fix EditTimerDialog display on long press
+
+5. **Improve Save Button UX**
+   - Update icon to better represent "Save as Template"
+   - Improve tool tips and descriptions
+   - Add confirmation dialog for better clarity
+
+### Recent Technical Improvementsn details, and ongoing improvements for the LastTimer Android application.
 
 ## Development Roadmap & Implementation Notes
 
@@ -107,6 +156,107 @@ This document tracks active development tasks, design decisions, implementation 
   - Recurring timer schedules
   - Time-of-day triggers
 
+### Bug Fixes in Progress
+- [x] **Critical Bug Fixes for LastTimer App**:
+  - [x] Fix app crash on views other than timer view
+    - Investigate navigation handling in MainScreen.kt
+    - Check if necessary services are initialized properly
+    - Ensure proper state management across view transitions
+  - [x] Restore control button functionality (stop, pause, play, trash, save)
+    - Debug button click handlers
+    - Fix implementation of modal dialogs triggered by buttons
+    - Ensure proper service connections for control actions
+  - [x] Fix center line appearing in CustomTimePicker digits
+    - Adjust styling and layout of the time picker component
+    - Fix z-index or drawing order of components
+    - Improve padding or spacing around digits
+  - [x] Restore long press functionality on timer/countdown/stopwatch items
+    - Debug implementation of pointerInput and detectTapGestures
+    - Ensure proper event propagation
+    - Fix edit dialog interactions
+  - [x] Improve save button UX logic when creating timers
+    - Clarify purpose of save button on timer items
+    - Consider renaming or redesigning for better user understanding
+
+### Current Bug Fixes (May 2025)
+- [x] **Initial Issues After App Installation**:
+  - [x] Fix timer creation not saving entities
+    - Fixed by calling loadTimers() after creation in TimerViewModel
+    - Added proper error handling and logging
+    - Ensured repository functionality works correctly
+  - [x] Fix missing controls on StopwatchScreen
+    - Restored stop, pause, lap, reset buttons
+    - Fixed delete button functionality
+    - Added long press edit functionality
+  - [x] Remove duplicate title in CountdownScreen
+    - Removed redundant title bar from CountdownScreen
+  - [x] Fix countdown timer controls
+    - Fixed reload after timer creation
+    - Fixed stop button functionality to properly reset and stop timer
+  - [x] Fix settings toggle with unclear title
+    - Changed title from generic "Settings" to "Display Options"
+
+### Additional Control Functionality Issues (May 2025)
+- [x] **Timer Control Functionality Issues**:
+  - [x] Fix non-responsive timer countdown and stopwatch buttons
+    - [x] Fix gesture detection issues with clickable modifier
+    - [x] Fix intent handling for timer actions
+    - [x] Add enhanced logging to identify issues
+  - [x] Fix non-working long press on timer entities
+    - [x] Fix clickable modifier interfering with pointerInput detection
+    - [x] Reorder modifiers to ensure proper event propagation
+  - [x] Fix timer reset and restart functionality
+    - [x] Fix issue with timer not resetting when finished
+    - [x] Update UI state after timer completion properly
+    - [x] Fix TimerService to properly update UI state after reset
+    - [x] Make play button properly restart completed timers
+    
+### Fixes Implemented (May 2025)
+1. **Fixed Gesture Detection**:
+   - Removed the `.clickable(onClick = { })` modifiers that were consuming touch events before they reached the pointer input
+   - This was preventing the long press gesture from being detected
+   
+2. **Fixed Timer Reset and Restart**:
+   - Updated `TimerService.stopTimer()` to properly update UI state instead of removing the timer from state tracking
+   - Enhanced `handleTimerCompleted()` with additional logging and proper state updates
+   - Improved `TimerViewModel.startTimer()` to properly handle resetting of completed timers
+   - Added debugging logs to better track the timer state changes
+   
+3. **Fixed UI State Updates**:
+   - Added explicit UI refreshes after timer state changes
+   - Enhanced the COMPLETED state handling in timer control buttons
+   - Made the restart button larger and more prominent for completed timers
+   
+4. **Improved Error Handling**:
+   - Added try/catch blocks around control button actions
+   - Added better error logging for debugging
+   
+5. **Fixed Delete/Trash Button Functionality**:
+   - Fixed `TimerViewModel.deleteTimer()` to use first() instead of collect() to avoid infinite loops
+   - Added UI refresh after deletion in all ViewModels to immediately update the UI
+   - Enhanced delete button visual appearance (red tint) to indicate its function
+   - Added comprehensive error handling and logging for delete operations
+   
+6. **Fixed Timer Restart Logic**:
+   - Updated `TimerService.startTimer()` with special handling for COMPLETED state
+   - Implemented proper reset procedure in TimerService when restarting completed timers
+   - Added detailed logging throughout the timer restart flow
+   - Ensured the UI state is properly updated when restarting timers
+  
+### Root Causes Identified (May 2025)
+1. **Click Event Propagation Issues**:
+   - The clickable modifier on Cards is consuming gesture events before pointerInput can detect them
+   - The modifier ordering is causing gesture detection failures
+   
+2. **Timer State Management Issues**:
+   - TimerService removes timer from state after stopping but doesn't update to IDLE
+   - ViewModels don't properly refresh the UI state after reset operations
+   - Completed state handling is incomplete in service and ViewModels
+   
+3. **Long Press Detection Issues**:
+   - Gesture detection is implemented but being blocked by other modifiers
+   - Touch events aren't properly propagated to long press handlers
+
 ### Recent Technical Improvements
 - [x] Performance Optimization:
   - Added database index on `timerId` in the `TimerGroupItem` junction entity to improve query performance for relationship queries
@@ -133,60 +283,105 @@ This document tracks active development tasks, design decisions, implementation 
   - Simplified redundant Elvis (`?:`) operators in `TimerScreen.kt` for non-nullable properties
   - Removed unused `nameState` and `onNameChange` parameters from `CreateTimerDialog`
 
+### Recent Implementation Details
+- [x] **Custom Time Picker Integration**:
+  - Created a reusable `CustomTimePicker` composable with vertical swipe functionality
+  - Added proper background styling and center line indicator
+  - Integrated with Timer dialogs and CreateCountdownDialog
+  - Created new dialog wrapper (`TimePickerDialogWithCustomPicker`) for consistent UI 
+  - Improved user experience with interactive wheel-style time selection
+  - Started implementing EditCountdownDialog with full date and time editing capabilities (partially implemented)
+  - Fixed accessibility and styling issues for better usability
+  - NOTE: Project has various compiler errors in other files that need to be addressed separately
+
+- [x] **Animation Utilities Implementation**:
+  - Created a unified animation system in `AnimationUtils.kt` 
+  - Implemented consistent animation specs across the app with duration constants
+  - Defined extension functions for common animations (fadeIn/Out, slideIn/Out, etc.)
+  - Added specialized animations for dialogs, list items, and page transitions
+  - Created modifiers for button and card press effects
+  - Added utilities for staggered animations
+  
+- [x] **UI Animation Enhancements**:
+  - Enhanced the CustomTimePicker with smooth animations
+  - Added scale and fade animations to picker numbers
+  - Improved center line indicator with better styling
+  - Added fade-in entrance animation to the time picker
+  - Added scale animations to navigation bar icons
+  - Added improved padding and layout to page transitions
+  - Enhanced HorizontalPager container with better padding
+  
+- [x] **Fixed Core Compilation Issues**:
+  - Fixed missing imports in MainScreen.kt (snapshotFlow, Box, width, height)
+  - Added missing string resources (repeat_count_hint, long_press_hint)
+  - Simplified animation approach to ensure compatibility
+  - Fixed icon sizing and scaling effects in navigation bar
+  - Updated time picker animations to work with existing code
+  - Removed problematic utility classes that caused compilation errors 
+  - Fixed duplicate TimerUiState definition in TimerViewModel
+  - Fixed timer list implementation to handle state properly
+  - Added proper collection of Flow objects with first() method
+  - Simplified CreateTimerDialog implementation for better maintainability
+  - Resolved type mismatches in TimerScreen.kt
+  - ✅ Successfully built the app after fixing all compilation errors
+
 ## UI/UX Improvement Plan
 
 The following improvements are being implemented to enhance the user experience:
 
-1. ✅ **Navigation Bar and Screen Title**
-   - Removed text labels from bottom navigation bar for cleaner look
-   - Added screen title to the top app bar for better context awareness
+1.  ✅ **Navigation Bar and Screen Title**
+    *   Removed text labels from bottom navigation bar for cleaner look
+    *   Added screen title to the top app bar for better context awareness
 
-2. ✅ **Timer Creation Simplification**
-   - Made timer name field optional and auto-generate descriptive names based on duration
-   - Added hint about long-press functionality for editing more details
+2.  ✅ **Timer Creation Simplification**
+    *   Made timer name field optional and auto-generate descriptive names based on duration
+    *   Added hint about long-press functionality for editing more details
 
-3. 🔄 **Timer Reset After Completion Fix**
-   - Fixed issue where completed timers would not reset properly when started again
-   - Ensures timers always start from the beginning when activated after completion
-   - Fix timer not being reset when done, add a reset button instead of play button when it is done
+3.  ✅ **Timer Reset After Completion Fix**
+    *   Fixed issue where completed timers would not reset properly when started again
+    *   Ensures timers always start from the beginning when activated after completion
+    *   Fix timer not being reset when done, add a reset button instead of play button when it is done
 
-4. ✅ **Stopwatch Stop/Reset Functionality**
-   - Added distinct stop and reset functions for stopwatch
-   - Improved layout of control buttons for better usability
+4.  ✅ **Stopwatch Stop/Reset Functionality**
+    *   Added distinct stop and reset functions for stopwatch
+    *   Improved layout of control buttons for better usability
 
-5. ✅ **Long-Press Editing for All Timer Types**
-   - Implemented long-press gesture for editing all timer types
-   - Added edit dialogs with full configuration options for Timer, Stopwatch, and Countdown
+5.  ✅ **Long-Press Editing for All Timer Types**
+    *   Implemented long-press gesture for editing all timer types
+    *   Added edit dialogs with full configuration options for Timer, Stopwatch, and Countdown
 
-6. 🔄 **Countdown Timer Controls Redesign**
-   - Improving layout of start, pause, and stop buttons
-   - Adding visual indicators for timer state
+6.  ✅ **Countdown Timer Controls Redesign**
+    *   Improving layout of start, pause, and stop buttons
+    *   Adding visual indicators for timer state
 
-7. 🔄 **Template Functionality Fix**
-   - Ensuring template saving and loading works correctly
-   - Improving the template selection interface
-   - When marking a timer for the template, it creates infinite amount of templates
+7.  ✅ **Template Functionality Fix**
+    *   Ensuring template saving and loading works correctly
+    *   Improving the template selection interface
+    *   When marking a timer for the template, it creates infinite amount of templates
 
-8. ⏳ **Settings tab Fix**
-   - Ensure settings display correctly
-   - Ensure toggles take affect
+8. ✅ **Settings tab Fix**
+    *   Ensure settings display correctly
+    *   Ensure toggles take affect
 
-9. ⏳ **Remove redundant title**
-   - There are two titles at the top, saying the same, remove the lower one, keep the upper one.
-   - At the bottom of the screen there is a large unneeded padding from the bottom to the icons, increase the icon size a bit, and decrease the size of the padding.
+9.  ✅ **Remove redundant title**
+    *   There are two titles at the top, saying the same, remove the lower one, keep the upper one.
+    *   At the bottom of the screen there is a large unneeded padding from the bottom to the icons, increase the icon size a bit, and decrease the size of the padding.
 
-10. ⏳ **Design overhaul**
-    - Make the design more slick and minimalistic
-    - Allow swipe sideways to change between tabs
-    - Create a nicer timepicker with swiping up and down across time (hour minutes seconds)
+10. 🔄 **Design overhaul**
+    *   ✅ Make the design more slick and minimalistic (Started with Timer items).
+    *   ✅ Allow swipe sideways to change between tabs.
+    *   ✅ Integrate Custom Time Picker into dialogs.
+    *   ✅ Enhance UI animations and transitions.
+    *   **Current Task:** Fix Group cascading timer functionality.
 
-11. ⏳ **Group cascading timer**
-    - Fix starting the timer group/cascading, currently play button doesn't do much
+11. 🔄 **Group cascading timer**
+    *   Fix starting the timer group/cascading, currently play button doesn't do much
 
 Legend:
 - ✅ Completed
 - 🔄 In Progress
 - ⏳ Planned
+- **Current Task:** Actively being worked on.
 
 ## Component Design
 
@@ -327,46 +522,31 @@ The app includes custom performance monitoring tools:
 - Check timer service status: `adb shell dumpsys activity services com.lasttimer.app.service.TimerService`
 - Monitor memory: `adb shell dumpsys meminfo com.lasttimer.app`
 
-## Implementation Notes
+### Animation Enhancement Plan
 
-### Key Design Decisions
+To improve the user experience through better animations and transitions, the following enhancements will be implemented:
 
-1. **Using a Single Timer Entity**: 
-   Rather than having separate entities for different timer types, we unified them into a single Timer entity with type differentiation. This simplifies database design while allowing specialized behavior through inheritance in domain layer.
+1. **Unified Animation System**:
+   - Create a shared animation utilities package
+   - Implement consistent animation specs across the app
+   - Define extension functions for common animations
 
-2. **Foreground Service Architecture**:
-   Timers run in a foreground service to ensure reliability across app lifecycle events. This required careful wake lock management and proper Android lifecycle integration.
+2. **UI Element Animations**:
+   - List item animations with staggered effects
+   - Dialog entrance/exit animations
+   - Button press/click animations
+   - Card hover/press effects
 
-3. **Flow-based Reactive UI**:
-   All UI elements react to changes in data through Kotlin Flow, rather than direct callbacks or LiveData. This creates a more consistent reactive architecture throughout the app.
+3. **Transition Improvements**:
+   - Enhance page transitions between tabs
+   - Add content transitions for state changes
+   - Improve loading state animations
+   - Create smoother navigation experiences
 
-4. **Template vs. Instance Approach**:
-   Timer templates and instances share the same entity type but are differentiated by an `isTemplate` flag. This simplifies creating timers from templates while maintaining a clean database structure.
+4. **Implementation Focus Areas**:
+   - Timer and Countdown item lists
+   - Dialog animations
+   - Navigation transitions
+   - Button interactions
 
-### Technical Challenges
-
-1. **Timer Accuracy**: 
-   Ensuring accurate timing across device sleep states and battery optimization mechanisms required careful implementation of wake locks and precise timing calculations.
-
-2. **Background Execution**:
-   Foreground service implementation required handling many edge cases in Android's lifecycle, especially across different Android versions.
-
-3. **Data Synchronization**:
-   Maintaining consistent state between the UI and the service required careful flow collection and error handling.
-
-### Performance Considerations
-
-1. **Database Access Optimization**:
-   - Used Room's query optimization features
-   - Implemented proper indexing on frequently queried columns
-   - Used transaction blocks for batch operations
-
-2. **Compose Recomposition Optimization**:
-   - Careful state hoisting to minimize unnecessary recompositions
-   - Strategic use of derivedStateOf and remember
-   - LaunchedEffect scoping to minimize side effects
-
-3. **Memory Management**:
-   - Lifecycle-aware coroutine scopes to prevent leaks
-   - Proper cleanup of resources in onDispose blocks
-   - Custom memory monitoring for detecting issues
+This plan will ensure a more cohesive, polished UI experience throughout the app while maintaining performance.

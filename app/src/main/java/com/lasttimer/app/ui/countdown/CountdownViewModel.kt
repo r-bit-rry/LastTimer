@@ -129,8 +129,18 @@ class CountdownViewModel @Inject constructor(
         )
         
         viewModelScope.launch {
-            timerRepository.saveTimer(countdown)
-            hideCreateCountdownDialog()
+            try {
+                // Save the timer
+                timerRepository.saveTimer(countdown)
+                // Hide the dialog
+                hideCreateCountdownDialog()
+                // Reload the countdowns list to update UI
+                loadCountdowns()
+                println("DEBUG: Countdown created and saved successfully with ID: ${countdown.id}")
+            } catch (e: Exception) {
+                println("ERROR: Failed to save countdown - ${e.message}")
+                _uiState.value = CountdownUiState.Error("Failed to save countdown: ${e.message}")
+            }
         }
     }
     
@@ -156,16 +166,45 @@ class CountdownViewModel @Inject constructor(
     
     fun stopCountdown(timerId: String, @Suppress("UNUSED_PARAMETER") serviceIntent: Intent) {
         viewModelScope.launch {
-            timerRepository.resetTimer(timerId)
+            try {
+                // First get the current timer to check its status
+                val countdown = timerRepository.getTimerById(timerId).first()
+                
+                // Reset the timer
+                timerRepository.resetTimer(timerId)
+                
+                // Also explicitly set the status to IDLE to ensure it's stopped
+                timerRepository.updateTimerStatus(timerId, TimerStatus.IDLE)
+                
+                // Log for debugging
+                println("DEBUG: Countdown stopped and reset: $timerId")
+                
+                // Reload countdowns to update UI
+                loadCountdowns()
+            } catch (e: Exception) {
+                println("ERROR: Failed to stop countdown - ${e.message}")
+            }
         }
     }
     
     fun deleteCountdown(timerId: String) {
         viewModelScope.launch {
-            val countdown = timerRepository.getTimerById(timerId).first()
-            
-            countdown?.let {
-                timerRepository.deleteTimer(it)
+            try {
+                println("DEBUG: Deleting countdown $timerId")
+                
+                val countdown = timerRepository.getTimerById(timerId).first()
+                
+                countdown?.let {
+                    timerRepository.deleteTimer(it)
+                    println("DEBUG: Countdown $timerId deleted successfully")
+                    
+                    // Refresh the UI after deletion
+                    loadCountdowns()
+                } ?: println("ERROR: Could not find countdown $timerId to delete")
+            } catch (e: Exception) {
+                println("ERROR: Failed to delete countdown $timerId - ${e.message}")
+                e.printStackTrace()
+                _uiState.value = CountdownUiState.Error("Failed to delete countdown: ${e.message}")
             }
         }
     }
